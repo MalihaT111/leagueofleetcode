@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+.env
+.venv
+venv/
+myenv/
+
+# FastAPI/Uvicorn
+*.log
+
+# Environment variables & secrets
+.env.local
+.env.production
+config.ini
+secrets.json
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (if using local SQLite)
+*.db
+*.sqlite3
+
+# Dependencies
+requirements.txt.bak
