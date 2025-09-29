@@ -14,12 +14,6 @@ importers:
       '@mantine/hooks':
         specifier: ^8.3.2
         version: 8.3.2(react@19.1.0)
-      '@mantine/core':
-        specifier: ^8.3.2
-        version: 8.3.2(@mantine/hooks@8.3.2(react@19.1.0))(@types/react@19.1.13)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@mantine/hooks':
-        specifier: ^8.3.2
-        version: 8.3.2(react@19.1.0)
       next:
         specifier: 15.5.3
         version: 15.5.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -29,12 +23,6 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
-      react-router:
-        specifier: ^7.9.3
-        version: 7.9.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react-router-dom:
-        specifier: ^7.9.3
-        version: 7.9.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3
@@ -62,10 +50,6 @@ importers:
         version: 5.9.2
 
 packages:
-
-  '@babel/runtime@7.28.4':
-    resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
@@ -280,18 +264,6 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
-
-  '@mantine/core@8.3.2':
-    resolution: {integrity: sha512-uIHC9ooEZ9E+/pw8ag4f8pi0GmwSQ1DYnETjr4a4ZNVKJHfVv5NSkjprBxPrKJq9oox/SdcrAWy5XlKTwBzRag==}
-    peerDependencies:
-      '@mantine/hooks': 8.3.2
-      react: ^18.x || ^19.x
-      react-dom: ^18.x || ^19.x
-
-  '@mantine/hooks@8.3.2':
-    resolution: {integrity: sha512-urDgQJNAs2t2mAyGaA+7uNsBMRn9U/ccvi+ZUl5ef3/Wzfv5KYHe9LA9DBNhn24BTSewxrI27W0EFpFxv/Jsbg==}
-    peerDependencies:
-      react: ^18.x || ^19.x
 
   '@mantine/core@8.3.2':
     resolution: {integrity: sha512-uIHC9ooEZ9E+/pw8ag4f8pi0GmwSQ1DYnETjr4a4ZNVKJHfVv5NSkjprBxPrKJq9oox/SdcrAWy5XlKTwBzRag==}
@@ -692,10 +664,6 @@ packages:
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
-  cookie@1.0.2:
-    resolution: {integrity: sha512-9Kr/j4O16ISv8zBBhJoi4bXOYNTkFLOqSL3UDB0njXxCXNezjeyVrJyGOWtgfs/q2km1gwBcfH8q1yEGoMYunA==}
-    engines: {node: '>=18'}
-
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -749,9 +717,6 @@ packages:
   detect-libc@2.1.0:
     resolution: {integrity: sha512-vEtk+OcP7VBRtQZ1EJ3bdgzSfBjgnEalLTp5zjJrS+2Z1w2KZly4SBdac/WDU3hhsNAZ9E8SC96ME4Ey8MZ7cg==}
     engines: {node: '>=8'}
-
-  detect-node-es@1.1.0:
-    resolution: {integrity: sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==}
 
   detect-node-es@1.1.0:
     resolution: {integrity: sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==}
@@ -984,10 +949,6 @@ packages:
   get-intrinsic@1.3.0:
     resolution: {integrity: sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==}
     engines: {node: '>= 0.4'}
-
-  get-nonce@1.0.1:
-    resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
-    engines: {node: '>=6'}
 
   get-nonce@1.0.1:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
@@ -1446,65 +1407,6 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  react-number-format@5.4.4:
-    resolution: {integrity: sha512-wOmoNZoOpvMminhifQYiYSTCLUDOiUbBunrMrMjA+dV52sY+vck1S4UhR6PkgnoCquvvMSeJjErXZ4qSaWCliA==}
-    peerDependencies:
-      react: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  react-remove-scroll-bar@2.3.8:
-    resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
-  react-remove-scroll@2.7.1:
-    resolution: {integrity: sha512-HpMh8+oahmIdOuS5aFKKY6Pyog+FNaZV/XyJOq7b4YFwsFHe5yYfdbIalI4k3vU2nSDql7YskmUseHsRrJqIPA==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
-  react-router-dom@7.9.3:
-    resolution: {integrity: sha512-1QSbA0TGGFKTAc/aWjpfW/zoEukYfU4dc1dLkT/vvf54JoGMkW+fNA+3oyo2gWVW1GM7BxjJVHz5GnPJv40rvg==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      react: '>=18'
-      react-dom: '>=18'
-
-  react-router@7.9.3:
-    resolution: {integrity: sha512-4o2iWCFIwhI/eYAIL43+cjORXYn/aRQPgtFRRZb3VzoyQ5Uej0Bmqj7437L97N9NJW4wnicSwLOLS+yCXfAPgg==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      react: '>=18'
-      react-dom: '>=18'
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-
-  react-style-singleton@2.2.3:
-    resolution: {integrity: sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
-  react-textarea-autosize@8.5.9:
-    resolution: {integrity: sha512-U1DGlIQN5AwgjTyOEnI1oCcMuEr1pv1qOtklB2l4nyMGbHzWrI0eFsYK0zos2YWqAolJyG0IWJaqWmWj5ETh0A==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
   react@19.1.0:
     resolution: {integrity: sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==}
     engines: {node: '>=0.10.0'}
@@ -1563,9 +1465,6 @@ packages:
     resolution: {integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==}
     engines: {node: '>=10'}
     hasBin: true
-
-  set-cookie-parser@2.7.1:
-    resolution: {integrity: sha512-IOc8uWeOZgnb3ptbCURJWNjWUPcO3ZnTTdzsurqERrP6nPyv+paC55vJM0LpOlT2ne+Ix+9+CRG1MNLlyZ4GjQ==}
 
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
@@ -2405,8 +2304,6 @@ snapshots:
 
   concat-map@0.0.1: {}
 
-  cookie@1.0.2: {}
-
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -2620,7 +2517,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.44.0(eslint@9.35.0)(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.35.0):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.44.0(eslint@9.35.0)(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.35.0))(eslint@9.35.0):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
@@ -2642,7 +2539,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.35.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.44.0(eslint@9.35.0)(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.35.0)
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.44.0(eslint@9.35.0)(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.35.0))(eslint@9.35.0)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -3300,61 +3197,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  react-number-format@5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
-
-  react-remove-scroll-bar@2.3.8(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-style-singleton: 2.2.3(@types/react@19.1.13)(react@19.1.0)
-      tslib: 2.8.1
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  react-remove-scroll@2.7.1(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-remove-scroll-bar: 2.3.8(@types/react@19.1.13)(react@19.1.0)
-      react-style-singleton: 2.2.3(@types/react@19.1.13)(react@19.1.0)
-      tslib: 2.8.1
-      use-callback-ref: 1.3.3(@types/react@19.1.13)(react@19.1.0)
-      use-sidecar: 1.1.3(@types/react@19.1.13)(react@19.1.0)
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  react-router-dom@7.9.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
-      react-router: 7.9.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-
-  react-router@7.9.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
-    dependencies:
-      cookie: 1.0.2
-      react: 19.1.0
-      set-cookie-parser: 2.7.1
-    optionalDependencies:
-      react-dom: 19.1.0(react@19.1.0)
-
-  react-style-singleton@2.2.3(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      get-nonce: 1.0.1
-      react: 19.1.0
-      tslib: 2.8.1
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  react-textarea-autosize@8.5.9(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      '@babel/runtime': 7.28.4
-      react: 19.1.0
-      use-composed-ref: 1.4.0(@types/react@19.1.13)(react@19.1.0)
-      use-latest: 1.3.0(@types/react@19.1.13)(react@19.1.0)
-    transitivePeerDependencies:
-      - '@types/react'
-
   react@19.1.0: {}
 
   reflect.getprototypeof@1.0.10:
@@ -3423,8 +3265,6 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.7.2: {}
-
-  set-cookie-parser@2.7.1: {}
 
   set-function-length@1.2.2:
     dependencies:
@@ -3687,40 +3527,6 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
-
-  use-callback-ref@1.3.3(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      tslib: 2.8.1
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  use-composed-ref@1.4.0(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  use-isomorphic-layout-effect@1.2.1(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  use-latest@1.3.0(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      use-isomorphic-layout-effect: 1.2.1(@types/react@19.1.13)(react@19.1.0)
-    optionalDependencies:
-      '@types/react': 19.1.13
-
-  use-sidecar@1.1.3(@types/react@19.1.13)(react@19.1.0):
-    dependencies:
-      detect-node-es: 1.1.0
-      react: 19.1.0
-      tslib: 2.8.1
-    optionalDependencies:
-      '@types/react': 19.1.13
 
   use-callback-ref@1.3.3(@types/react@19.1.13)(react@19.1.0):
     dependencies:
