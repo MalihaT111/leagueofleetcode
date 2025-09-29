@@ -66,7 +66,7 @@ export default function MatchFoundPage() {
         className={montserrat.className}
         style={{ fontSize: "40px", fontWeight: 700 }}
       >
-        Match found!
+        MATCH FOUND
       </Title>
 
       {/* Players row */}
