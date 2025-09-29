@@ -9,7 +9,6 @@ class Problem(BaseModel):
     difficulty: str
     tags: List[str]
     acceptance_rate: float
-    is_premium: bool
     content: Optional[str] = None
 
 class UserSubmission(BaseModel):

@@ -1,6 +1,9 @@
 import httpx
 from typing import List, Optional
-from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResult
+from .schemas import Problem, UserSubmission, ProblemStats, SyncResult
+from .enums.difficulties import DifficultyEnum
+import random
+
 
 class LeetCodeService:
     BASE_URL = "https://leetcode.com/graphql"
@@ -12,7 +15,8 @@ class LeetCodeService:
             response = await client.post(
                 LeetCodeService.BASE_URL,
                 json={"query": query, "variables": variables or {}},
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json",
+                         "Referer": "https://leetcode.com",}
             )
             response.raise_for_status()
             return response.json()
@@ -33,11 +37,30 @@ class LeetCodeService:
         # TODO: Implement GraphQL query for single problem
         pass
     
+    #not working
     @staticmethod
-    async def get_user_submissions(username: str) -> List[UserSubmission]:
+    async def get_user_submissions(username: str):
         """Get user's recent submissions"""
-        # TODO: Implement GraphQL query for user submissions
-        pass
+        query = """
+        query recentSubmissions($username: String!) {
+          recentSubmissions(username: $username) {
+            title
+            titleSlug
+            statusDisplay
+            lang
+            timestamp
+          }
+        }
+        """
+
+        variables = {"username": username}
+        print(variables)
+        data = await LeetCodeService._make_graphql_request(query, variables)
+
+        print(submissions)
+        submissions = data["data"]["recentSubmissions"]
+        return submissions
+
     
     @staticmethod
     async def get_user_stats(username: str) -> ProblemStats:
@@ -50,3 +73,49 @@ class LeetCodeService:
         """Sync user's LeetCode progress to database"""
         # TODO: Implement progress synchronization
         pass
+    
+    async def get_random_problem(
+        self, difficulty: Optional[DifficultyEnum] = None
+    ) -> Problem:
+        """Fetch a random LeetCode problem, optionally filtered by difficulty"""
+        query = """
+        query problemsetQuestionList(
+            $categorySlug: String,
+            $skip: Int,
+            $limit: Int,
+            $filters: QuestionListFilterInput
+        ) {
+            problemsetQuestionList: questionList(
+                categorySlug: $categorySlug,
+                skip: $skip,
+                limit: $limit,
+                filters: $filters
+            ) {
+                total: totalNum
+                questions: data {
+                    questionFrontendId
+                    title
+                    titleSlug
+                    difficulty
+                }
+            }
+        }
+        """
+
+        variables = {
+            "categorySlug": "",
+            "skip": 0,
+            "limit": 200,   # pull a chunk of problems
+            "filters": {
+                "tags": [],
+                **({"difficulty": difficulty.value} if difficulty else {})
+            }
+        }
+
+        data = await self._make_graphql_request(query, variables)
+        questions = data["data"]["problemsetQuestionList"]["questions"]
+
+        if not questions:
+            raise ValueError("No problems found with the given filters.")
+
+        return random.choice(questions)
