@@ -1,18 +1,27 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+# backend/src/database/database.py
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# Database URL - use environment variable in production
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./leetcode_tracker.db")
+# Use environment variable in production
+# Example for MySQL RDS (async driver):
+# mysql+aiomysql://username:password@rds-endpoint:3306/league_of_leetcode
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite+aiosqlite:///./leetcode_tracker.db"  # fallback for local dev
+)
 
 # Create async engine
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
 
 # Create async session
 AsyncSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
 )
 
 # Base class for models

@@ -1,6 +1,8 @@
+# backend/src/users/schemas.py
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+
 
 class UserProfile(BaseModel):
     id: int
@@ -13,9 +15,11 @@ class UserProfile(BaseModel):
     class Config:
         from_attributes = True
 
+
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     leetcode_username: Optional[str] = None
+
 
 class UserStats(BaseModel):
     total_solved: int
@@ -24,3 +28,23 @@ class UserStats(BaseModel):
     hard_solved: int
     acceptance_rate: float
     ranking: Optional[int] = None
+
+
+# ---------- Schemas for Account Creation ----------
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+    leetcode_username: Optional[str] = None
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    username: str
+    leetcode_username: Optional[str] = None
+    user_elo: int
+
+    class Config:
+        from_attributes = True
