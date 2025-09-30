@@ -1,3 +1,4 @@
+# backend/src/init_db.py
 from database.database import engine, Base
 from database import models
 
