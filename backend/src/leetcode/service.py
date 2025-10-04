@@ -2,7 +2,9 @@ import httpx
 from typing import List, Optional
 from .schemas import Problem, UserSubmission, ProblemStats, SyncResult
 from .enums.difficulties import DifficultyEnum
-import random
+from .queries import *
+import json
+import html
 
 
 class LeetCodeService:
@@ -32,10 +34,31 @@ class LeetCodeService:
         pass
     
     @staticmethod
-    async def get_problem(problem_slug: str) -> Problem:
-        """Get specific problem details"""
-        # TODO: Implement GraphQL query for single problem
-        pass
+    async def get_problem(slug: str) -> Problem:
+        variables = {"titleSlug": slug}
+        data_detail = await LeetCodeService._make_graphql_request(PROBLEM_QUERY, variables)
+
+        q = data_detail["data"]["question"]
+
+        stats = json.loads(q.get("stats", "{}"))
+        acceptance_rate = stats.get("acRate", "0%")
+        
+        raw_content = q.get("content", "")
+        decoded_content = html.unescape(raw_content) if raw_content else None
+        
+        print(q)
+        problem = Problem(
+            id=int(q["questionId"]),
+            title=q["title"],
+            slug=q["titleSlug"],
+            difficulty=q["difficulty"],
+            tags=[tag["name"] for tag in q.get("topicTags", [])],
+            acceptance_rate=acceptance_rate,
+            content=decoded_content,
+        )
+        return problem
+
+        
     
     #not working
     @staticmethod
@@ -74,48 +97,13 @@ class LeetCodeService:
         # TODO: Implement progress synchronization
         pass
     
-    async def get_random_problem(
-        self, difficulty: Optional[DifficultyEnum] = None
-    ) -> Problem:
-        """Fetch a random LeetCode problem, optionally filtered by difficulty"""
-        query = """
-        query problemsetQuestionList(
-            $categorySlug: String,
-            $skip: Int,
-            $limit: Int,
-            $filters: QuestionListFilterInput
-        ) {
-            problemsetQuestionList: questionList(
-                categorySlug: $categorySlug,
-                skip: $skip,
-                limit: $limit,
-                filters: $filters
-            ) {
-                total: totalNum
-                questions: data {
-                    questionFrontendId
-                    title
-                    titleSlug
-                    difficulty
-                }
-            }
-        }
-        """
-
-        variables = {
-            "categorySlug": "",
-            "skip": 0,
-            "limit": 200,   # pull a chunk of problems
-            "filters": {
-                "tags": [],
-                **({"difficulty": difficulty.value} if difficulty else {})
-            }
-        }
-
-        data = await self._make_graphql_request(query, variables)
-        questions = data["data"]["problemsetQuestionList"]["questions"]
-
-        if not questions:
-            raise ValueError("No problems found with the given filters.")
-
-        return random.choice(questions)
+    @staticmethod
+    async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
+        response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
+        
+        randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
+        print(randomSlug)
+        
+        problem_response = await LeetCodeService.get_problem(randomSlug)
+        
+        return problem_response
