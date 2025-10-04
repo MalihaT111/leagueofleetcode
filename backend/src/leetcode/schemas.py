@@ -8,7 +8,7 @@ class Problem(BaseModel):
     slug: str
     difficulty: str
     tags: List[str]
-    acceptance_rate: float
+    acceptance_rate: str
     content: Optional[str] = None
 
 class UserSubmission(BaseModel):
