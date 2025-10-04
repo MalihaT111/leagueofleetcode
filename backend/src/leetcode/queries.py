@@ -1,4 +1,4 @@
-profile_query = """
+PROFILE_QUERY = """
     query getUserProfile($username: String!) {
       matchedUser(username: $username) {
         username
@@ -12,45 +12,31 @@ profile_query = """
     }
     """
 
-problem_query = """
-    query getProblems($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
-        problemsetQuestionList: questionList(
-            categorySlug: $categorySlug
-            limit: $limit
-            skip: $skip
-            filters: $filters
-        ) {
-            total: totalNum
-            questions: data {
-                acRate
-                difficulty
-                freqBar
-                questionFrontendId
-                isFavor
-                isPaidOnly
-                status
-                title
-                titleSlug
-                topicTags {
-                    name
-                    id
-                    slug
-                }
-                hasSolution
-                hasVideoSolution
-            }
-        }
-}"""
-
-random_question_query = """
-      randomQuestionV2($favoriteSlug: String, $categorySlug: String, $searchKeyword: String, $filtersV2: QuestionFilterInput) {
-        randomQuestionV2(
-          favoriteSlug: $favoriteSlug
-          categorySlug: $categorySlug
-          filtersV2: $filtersV2
-          searchKeyword: $searchKeyword
-        ) {
-          titleSlug
-        }
-      }
-    """
+PROBLEM_QUERY = """
+                    query selectProblem($titleSlug: String!) {
+                        question(titleSlug: $titleSlug) {
+                            questionId
+                            title
+                            titleSlug
+                            content
+                            difficulty
+                            stats
+                            topicTags {
+                                name
+                            }
+                        }
+                    }
+                    """
+        
+RANDOM_QUESTION_QUERY = """
+  query randomQuestionV2($favoriteSlug: String, $categorySlug: String, $searchKeyword: String, $filtersV2: QuestionFilterInput) {
+    randomQuestionV2(
+      favoriteSlug: $favoriteSlug
+      categorySlug: $categorySlug
+      filtersV2: $filtersV2
+      searchKeyword: $searchKeyword
+    ) {
+      titleSlug
+    }
+  }
+"""
