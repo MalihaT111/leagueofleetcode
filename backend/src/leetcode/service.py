@@ -1,8 +1,11 @@
 import httpx
 from typing import List, Optional
-from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResult
-from enums.difficulty import DifficultyEnum
-from queries import *
+from .schemas import Problem, UserSubmission, ProblemStats, SyncResult
+from .enums.difficulties import DifficultyEnum
+from .queries import *
+import json
+import html
+
 
 class LeetCodeService:
     BASE_URL = "https://leetcode.com/graphql"
@@ -30,11 +33,33 @@ class LeetCodeService:
         pass
     
     @staticmethod
-    async def get_problem(problem_slug: str) -> Problem:
-        """Get specific problem details"""
-        # TODO: Implement GraphQL query for single problem
-        pass
+    async def get_problem(slug: str) -> Problem:
+        variables = {"titleSlug": slug}
+        data_detail = await LeetCodeService._make_graphql_request(PROBLEM_QUERY, variables)
+
+        q = data_detail["data"]["question"]
+
+        stats = json.loads(q.get("stats", "{}"))
+        acceptance_rate = stats.get("acRate", "0%")
+        
+        raw_content = q.get("content", "")
+        decoded_content = html.unescape(raw_content) if raw_content else None
+        
+        print(q)
+        problem = Problem(
+            id=int(q["questionId"]),
+            title=q["title"],
+            slug=q["titleSlug"],
+            difficulty=q["difficulty"],
+            tags=[tag["name"] for tag in q.get("topicTags", [])],
+            acceptance_rate=acceptance_rate,
+            content=decoded_content,
+        )
+        return problem
+
+        
     
+    #not working
     @staticmethod
     async def get_user_submissions(username: str) -> List[UserSubmission]:
         """Get user's recent submissions"""
@@ -53,6 +78,16 @@ class LeetCodeService:
         # TODO: Implement progress synchronization
         pass
     
+    @staticmethod
+    async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
+        response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
+        
+        randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
+        print(randomSlug)
+        
+        problem_response = await LeetCodeService.get_problem(randomSlug)
+        
+        return problem_response
     @staticmethod
     async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
         response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
