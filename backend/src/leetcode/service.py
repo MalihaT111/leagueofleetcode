@@ -63,13 +63,13 @@ class LeetCodeService:
         for sub in submissions:
             mapped = {
                 "id": int(sub["id"]),
-                "problem_id": int(sub["id"]),  # if LeetCode doesn't return a separate problem_id, reuse id or add logic
+                "problem_id": int(sub["id"]),
                 "problem_title": sub["title"],
                 "status": sub["statusDisplay"],
                 "language": sub["lang"],
                 "submitted_at": datetime.fromtimestamp(int(sub["timestamp"])),
-                "runtime": None,
-                "memory": None,
+                "runtime": sub["runtime"],
+                "memory": sub["memory"],
             }
             result.append(UserSubmission(**mapped))        
 
