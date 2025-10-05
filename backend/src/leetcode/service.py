@@ -5,6 +5,7 @@ from .enums.difficulties import DifficultyEnum
 from .queries import *
 import json
 import html
+from datetime import datetime
 
 
 class LeetCodeService:
@@ -21,16 +22,6 @@ class LeetCodeService:
             )
             response.raise_for_status()
             return response.json()
-    
-    @staticmethod
-    async def get_problems(
-        difficulty: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        limit: int = 50
-    ) -> List[Problem]:
-        """Get LeetCode problems with filtering"""
-        # TODO: Implement GraphQL query for problems
-        pass
     
     @staticmethod
     async def get_problem(slug: str) -> Problem:
@@ -57,25 +48,45 @@ class LeetCodeService:
         )
         return problem
 
-        
-    
-    #not working
     @staticmethod
-    async def get_user_submissions(username: str) -> List[UserSubmission]:
-        """Get user's recent submissions"""
-        # TODO: Implement GraphQL query for user submissions
-        pass
-    
+    async def get_user_submissions(username: str, limit: int = 15):
+        """Get user's recent accepted submissions"""
+        query = RECENT_AC_SUBMISSIONS_QUERY
+
+        variables = {"username": username, "limit": limit}
+
+        data = await LeetCodeService._make_graphql_request(query, variables)
+
+        submissions = data["data"]["recentAcSubmissionList"]
+        
+        result = []
+        for sub in submissions:
+            mapped = {
+                "id": int(sub["id"]),
+                "problem_id": int(sub["id"]),  # if LeetCode doesn't return a separate problem_id, reuse id or add logic
+                "problem_title": sub["title"],
+                "status": sub["statusDisplay"],
+                "language": sub["lang"],
+                "submitted_at": datetime.fromtimestamp(int(sub["timestamp"])),
+                "runtime": None,
+                "memory": None,
+            }
+            result.append(UserSubmission(**mapped))        
+
+        return result
+
+    # move to another folder
     @staticmethod
     async def get_user_stats(username: str) -> ProblemStats:
         """Get user's LeetCode statistics"""
-        # TODO: Implement GraphQL query for user stats
+        # TODO: gets user information from the endpoint `/api/user/$username`
         pass
     
     @staticmethod
     async def sync_user_progress(user_id: int, leetcode_username: str) -> SyncResult:
         """Sync user's LeetCode progress to database"""
         # TODO: Implement progress synchronization
+        # 
         pass
     
     @staticmethod
