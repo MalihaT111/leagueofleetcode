@@ -4,33 +4,30 @@ from src.auth.service import AuthService
 from src.leetcode.schemas import Problem, UserSubmission, ProblemStats
 from src.leetcode.service import LeetCodeService
 
-router = APIRouter()
+leetcode_router = APIRouter()
 
-@router.get("/problems", response_model=List[Problem])
-async def get_problems(
-    difficulty: str = None,
-    tags: List[str] = None,
-    limit: int = 50
-):
-    """Get LeetCode problems with optional filtering"""
-    return await LeetCodeService.get_problems(difficulty, tags, limit)
-
-@router.get("/problems/{problem_slug}", response_model=Problem)
+@leetcode_router.get("/problem/{problem_slug}", response_model=Problem)
 async def get_problem(problem_slug: str):
     """Get specific problem details"""
-    return await LeetCodeService.get_problem(problem_slug)
+    problem = await LeetCodeService.get_problem(problem_slug)
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+    return problem
 
-@router.get("/user/{username}/submissions", response_model=List[UserSubmission])
+
+@leetcode_router.get("/users/{username}/submissions", response_model=List[UserSubmission])
 async def get_user_submissions(username: str):
     """Get user's recent submissions"""
     return await LeetCodeService.get_user_submissions(username)
 
-@router.get("/user/{username}/stats", response_model=ProblemStats)
+
+@leetcode_router.get("/users/{username}/stats", response_model=ProblemStats)
 async def get_user_leetcode_stats(username: str):
     """Get user's LeetCode statistics"""
     return await LeetCodeService.get_user_stats(username)
 
-@router.post("/sync-progress")
+
+@leetcode_router.post("/sync-progress", status_code=202)
 async def sync_user_progress(current_user = Depends(AuthService.get_current_user)):
     """Sync current user's LeetCode progress"""
     if not current_user.leetcode_username:
