@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth.routes import auth_router
-from .leetcode.routes import leetcode_router
+from .leetcode import leetcode_router
 from .database.database import init_db
 
 
