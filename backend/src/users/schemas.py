@@ -14,3 +14,13 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UserStats(BaseModel):
+    username: str
+    leetcode_hash: str | None
+    leetcode_username: str
+    user_elo: int
+
+    class Config:
+        from_attributes = True
