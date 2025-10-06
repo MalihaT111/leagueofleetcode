@@ -1,26 +1,16 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import datetime
+# backend/src/users/schemas.py
+from pydantic import BaseModel
 
-class UserProfile(BaseModel):
-    id: int
-    email: EmailStr
+class UserCreate(BaseModel):
     username: str
-    leetcode_username: Optional[str] = None
-    is_active: bool
-    created_at: datetime
-    
+    password: str
+    leetcode_username: str
+
+class UserResponse(BaseModel):
+    user_id: int
+    username: str
+    leetcode_username: str
+    user_elo: int
+
     class Config:
-        from_attributes = True
-
-class UserUpdate(BaseModel):
-    username: Optional[str] = None
-    leetcode_username: Optional[str] = None
-
-class UserStats(BaseModel):
-    total_solved: int
-    easy_solved: int
-    medium_solved: int
-    hard_solved: int
-    acceptance_rate: float
-    ranking: Optional[int] = None
+        orm_mode = True
