@@ -19,7 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # -----------------------------
 # General query executor
 # -----------------------------
-def execute_query(query: str, fetch: bool = True):
+def execute_query(query: str, params: dict = None, fetch: bool = True):
     """
     Execute a raw SQL query against the RDS database.
 
@@ -35,7 +35,7 @@ def execute_query(query: str, fetch: bool = True):
     db = SessionLocal()
     try:
         statement = text(query)
-        res = db.execute(statement)
+        res = db.execute(statement, params or {})
         if fetch:
             # Convert results to list of dicts
             columns = res.keys()
