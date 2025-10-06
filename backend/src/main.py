@@ -1,8 +1,16 @@
-# backend/src/main.py
 from fastapi import FastAPI
-from users import routes as user_routes
+from contextlib import asynccontextmanager
+from src.database.database import init_db
+from src.users import routes as user_routes
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup code
+    init_db()  # sync function, no await
+    yield
+    # Shutdown code (optional)
 
-# Register routers
+app = FastAPI(lifespan=lifespan)
+
+# Include routers
 app.include_router(user_routes.router)
