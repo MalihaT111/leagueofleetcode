@@ -1,7 +1,7 @@
 # backend/src/users/service.py
 from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
-from database import models
+from src.database import models
 from .schemas import UserCreate
 
 def create_user(db: Session, user: UserCreate):
