@@ -1,7 +1,7 @@
 import httpx
 from typing import List, Optional
 from .schemas import Problem, UserSubmission, ProblemStats, SyncResult
-from .enums.difficulties import DifficultyEnum
+from .enums.difficulty import DifficultyEnum
 from .queries import *
 import json
 import html
