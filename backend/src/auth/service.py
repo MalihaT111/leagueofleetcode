@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from src.auth.schemas import UserCreate, UserLogin, Token, User
-from src.database.models import UserModel
+from src.database.models import User
 from src.database.database import get_db
 
 SECRET_KEY = "your-secret-key-here"  # Move to environment variables

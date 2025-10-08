@@ -11,7 +11,7 @@ Handles all logic related to LeetCode API integration, including:
 from .routes import leetcode_router
 from .service import LeetCodeService
 from .schemas import Problem, UserSubmission, ProblemStats, SyncResult
-from .enums.difficulties import DifficultyEnum
+from .enums.difficulty import DifficultyEnum
 
 __all__ = [
     "leetcode_router",
