@@ -50,3 +50,14 @@ class LeetCodeService:
         """Sync user's LeetCode progress to database"""
         # TODO: Implement progress synchronization
         pass
+    
+    @staticmethod
+    async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
+        response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
+        
+        randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
+        print(randomSlug)
+        
+        problem_response = await LeetCodeService.get_problem(randomSlug)
+        
+        return problem_response
