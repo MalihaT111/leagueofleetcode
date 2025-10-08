@@ -6,6 +6,8 @@ from src.leetcode.service import LeetCodeService
 
 leetcode_router = APIRouter()
 
+# test endpoints currently. Service functions will be used to populate database instead
+    
 @leetcode_router.get("/problem/{problem_slug}", response_model=Problem)
 async def get_problem(problem_slug: str):
     """Get specific problem details"""

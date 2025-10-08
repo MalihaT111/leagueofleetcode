@@ -48,8 +48,9 @@ class LeetCodeService:
         )
         return problem
 
+    # need to reimplement 
     @staticmethod
-    async def get_user_submissions(username: str, limit: int = 15):
+    async def get_user_submissions(username: str, limit: int = 15) -> List[UserSubmission]:
         """Get user's recent accepted submissions"""
         query = RECENT_AC_SUBMISSIONS_QUERY
 
