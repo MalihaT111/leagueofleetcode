@@ -1,27 +1,35 @@
-from pydantic import BaseModel, EmailStr
+"""
+Simple Pydantic schemas for FastAPI-users.
+"""
+
+from fastapi_users import schemas
 from typing import Optional
 
-class UserBase(BaseModel):
-    email: EmailStr
-    username: str
 
-class UserCreate(UserBase):
-    password: str
+class UserRead(schemas.BaseUser[int]):
+    """Schema for reading user data."""
+    username: Optional[str] = None
     leetcode_username: Optional[str] = None
+    user_elo: int = 1200
+    
+    # Add/remove fields here as your schema changes
+    # display_name: Optional[str] = None
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user_id: int
-
-class User(UserBase):
-    id: int
-    is_active: bool
+class UserCreate(schemas.BaseUserCreate):
+    """Schema for creating users."""
+    username: Optional[str] = None
     leetcode_username: Optional[str] = None
     
-    class Config:
-        from_attributes = True
+    # Add/remove fields here as your schema changes
+    # display_name: Optional[str] = None
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    """Schema for updating users."""
+    username: Optional[str] = None
+    leetcode_username: Optional[str] = None
+    user_elo: Optional[int] = None
+    
+    # Add/remove fields here as your schema changes
+    # display_name: Optional[str] = None
