@@ -1,5 +1,5 @@
 "use client";
-
+import Navbar from "@/components/navbar";
 import { useEffect, useState } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox";
@@ -33,6 +33,7 @@ export default function MatchmakingPage() {
       c="white"
       gap="xl"
     >
+    <Navbar/>
       <Title
         style={{
           fontSize: "70px",

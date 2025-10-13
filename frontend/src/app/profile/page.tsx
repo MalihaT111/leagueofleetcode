@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Flex, Group, Table, Text, Title } from "@mantine/core";
 import { orbitron, montserrat } from "../fonts";
 import ProfileHeader from "@/components/profilehead";
-
+import Navbar from "@/components/navbar";
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Group justify="space-between" w="100%">
@@ -98,6 +98,7 @@ export default function ProfilePage() {
       c="white"
       gap={40}
     >
+      <Navbar/>
       <Title
         order={1}
         className={montserrat.className}

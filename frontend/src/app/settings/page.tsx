@@ -5,6 +5,7 @@ import { Flex, Title } from "@mantine/core";
 import { montserrat } from "@/app/fonts";
 import SettingsToggles from "@/components/settingstoggle";
 import FilterTypesCard from "@/components/filtertypes";
+import Navbar from "@/components/navbar";
 
 export default function SettingsPage() {
   return (
@@ -17,6 +18,7 @@ export default function SettingsPage() {
       c="white"
       gap={40}
     >
+      <Navbar/>
       <Title
         order={1}
         className={montserrat.className}
