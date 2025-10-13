@@ -2,5 +2,5 @@
 from src.database.database import engine, Base
 from src.database import models
 
-print("Creating tables...")
+print("Connecting...")
 Base.metadata.create_all(bind=engine)

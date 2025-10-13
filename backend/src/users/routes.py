@@ -1,38 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.database import get_db
-from . import service, schemas
-from src.database.models import User
+from src.users import service, schemas
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=schemas.UserResponse)
-def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     try:
-        db_user = service.create_user(db, user)
-        return db_user
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="User already exists or invalid input")
+        return service.create_user(db, user)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/{user_id}", response_model=schemas.UserStats)
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
-    """
-    Fetch username, leetcode_hash, leetcode_username, and user_elo
-    for a single user by user_id.
-    """
-    user = db.query(
-        User.username,
-        User.leetcode_hash,
-        User.leetcode_username,
-        User.user_elo
-    ).filter(User.user_id == user_id).first()
-    
+@router.get("/{user_id}", response_model=schemas.UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = service.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "username": user.username,
-        "leetcode_hash": user.leetcode_hash,
-        "leetcode_username": user.leetcode_username,
-        "user_elo": user.user_elo
-    }
+    return user
+
+@router.put("/{user_id}", response_model=schemas.UserResponse)
+def update_user(user_id: int, updates: dict, db: Session = Depends(get_db)):
+    user = service.update_user(db, user_id, updates)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    success = service.delete_user(db, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deleted successfully"}
