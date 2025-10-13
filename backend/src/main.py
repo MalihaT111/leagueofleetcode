@@ -3,36 +3,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from src.database.database import init_db
-from src.users.routes import router as user_router
-from src.auth.routes import router as auth_router      # if you have auth
-from src.leetcode.routes import router as leetcode_router  # if you have leetcode
-
-# --- Lifespan event (startup/shutdown) ---
+from src.users import routes as user_routes
+from src.auth import auth_router, register_router, current_user, User
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("nitializing database...")
     init_db()  # sync call, creates tables if not exist
     yield
-    print("Shutting down backend...")
+    # Shutdown code (optional)
 
-# --- Create FastAPI app ---
-app = FastAPI(title="LeetCode Tracker API", lifespan=lifespan)
+app = FastAPI(lifespan=lifespan)
 
-# --- CORS Middleware ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # your frontend origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# --- Register Routers ---
-app.include_router(user_router, prefix="/api/users", tags=["users"])
-app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
-app.include_router(leetcode_router, prefix="/api/leetcode", tags=["leetcode"])
+# Include routers
+app.include_router(user_routes.router)
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(register_router, prefix="/auth", tags=["auth"])
 
-# --- Root Health Check ---
-@app.get("/")
-async def root():
-    return {"message": "LeetCode Tracker API running"}
+@app.get("/me")
+async def get_profile(user: User = Depends(current_user)):
+    return {"email": user.email}
