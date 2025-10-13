@@ -1,5 +1,5 @@
 "use client";
-
+import Navbar from "@/components/navbar";
 import { useEffect, useState } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox"; // ✅ use your existing square ProfileBox
@@ -60,6 +60,7 @@ export default function MatchFoundPage() {
       c="white"
       gap="lg"
     >
+      <Navbar/>
       {/* Title */}
       <Title
         order={1}

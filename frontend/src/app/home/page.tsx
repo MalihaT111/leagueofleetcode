@@ -1,12 +1,12 @@
 "use client";
-
+import HomeNavbar from "@/components/homenav";
 import { Button, Flex, Stack, Title, Group, BackgroundImage, Box } from "@mantine/core";
 import Link from "next/link"
 import { AngledButton } from "@/components/angledbutton";
 export default function Home() {
   return (
     <Flex h="100vh" w="100%" pos="relative">
-
+      <HomeNavbar/>
       <BackgroundImage
         src="/background.png"
         style={{
@@ -57,12 +57,6 @@ export default function Home() {
 
 
         </Stack>
-
-        <Group justify="flex-end" w="100%">
-          <Button radius="xl" variant="white" color="dark">
-            PROFILE
-          </Button>
-        </Group>
       </Flex>
     </Flex>
   );
