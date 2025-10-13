@@ -55,3 +55,25 @@ RECENT_AC_SUBMISSIONS_QUERY = """
       }
   }
 """
+
+# Requires Auth
+SUBMISSION_DETAILS_QUERY = """
+  query submissionDetails($submissionId: Int!) {
+      submissionDetails(submissionId: $submissionId) {
+        id
+        runtime
+        runtimeDisplay
+        runtimePercentile
+        runtimeDistribution
+        memory
+        memoryDisplay
+        memoryPercentile
+        code
+        timestamp
+        lang {
+          name
+          verboseName
+        }
+      }
+    }
+"""

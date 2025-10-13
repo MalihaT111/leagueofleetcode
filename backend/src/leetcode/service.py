@@ -110,3 +110,15 @@ class LeetCodeService:
         problem_response = await LeetCodeService.get_problem(randomSlug)
         
         return problem_response
+    
+    @staticmethod
+    async def get_submission_details(submissionId: int) -> ProblemStats:
+        response = await LeetCodeService._make_graphql_request(PROBLEM_QUERY)
+        
+        if response["data"]["submissionDetails"] == "null":
+            raise Exception(
+                detail=f"Authentication required",
+            )
+            
+        # else:
+            
