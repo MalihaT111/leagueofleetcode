@@ -1,8 +1,8 @@
 import httpx
 from typing import List, Optional
 from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResult
-from enums.difficulty import DifficultyEnum
-from queries import *
+from src.leetcode.enums.difficulty import DifficultyEnum
+from src.leetcode.queries import *
 
 class LeetCodeService:
     BASE_URL = "https://leetcode.com/graphql"
