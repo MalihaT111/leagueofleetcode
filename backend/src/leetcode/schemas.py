@@ -20,6 +20,7 @@ class UserSubmission(BaseModel):
     memory: Optional[str] = None
     language: str
     submitted_at: datetime
+    code: str
 
 class ProblemStats(BaseModel):
     total_solved: int
