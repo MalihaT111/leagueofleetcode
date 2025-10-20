@@ -39,3 +39,7 @@ async def sync_user_progress(current_user = Depends(AuthService.get_current_user
         current_user.id, 
         current_user.leetcode_username
     )
+    
+@leetcode_router.get("/submission/{submissionId}", status_code=202)
+async def get_submission_details(submissionId):
+    return await LeetCodeService.get_submission_details(submissionId)
