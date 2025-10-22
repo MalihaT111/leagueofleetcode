@@ -18,7 +18,7 @@ def get_all_users(db: Session = Depends(get_db)):
     """Retrieve all users from the database."""
     users = service.get_all_users(db)
     if not users:
-        return []  # Empty list is fine; no exception needed
+        return []
     return users
 
 
@@ -44,3 +44,11 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "User deleted successfully"}
+
+@router.get("/leaderboard")
+def get_leaderboard():
+    users = service.get_leaderboard()
+    if not users:
+        return []
+    return users
+    
