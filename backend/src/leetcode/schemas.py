@@ -27,9 +27,6 @@ class ProblemStats(BaseModel):
     easy_solved: int
     medium_solved: int
     hard_solved: int
-    acceptance_rate: float
-    ranking: Optional[int] = None
-    reputation: Optional[int] = None
 
 class SyncResult(BaseModel):
     synced_submissions: int
