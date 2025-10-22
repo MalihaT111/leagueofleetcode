@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.database.database import init_db
 from src.users import routes as user_routes
+from src.matchmaking.routes import router as matchmaking_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -11,6 +12,7 @@ async def lifespan(app: FastAPI):
     # Shutdown code (optional)
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(matchmaking_router, prefix="/matchmaking", tags=["Matchmaking"])
 
 # Include routers
 app.include_router(user_routes.router)
