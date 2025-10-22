@@ -45,6 +45,15 @@ def delete_user(db: Session, user_id: int):
         return True
     return False
 
-def get_all_users(db):
+def get_all_users(db: Session):
     """Retrieve all users from the database"""
     return db.query(UserModel).all()
+
+def get_leaderboard(db: Session):
+    return (
+        db.query(UserModel)
+        .order_by(UserModel.user_elo.desc())
+        .limit(10)
+        .all()
+    )
+
