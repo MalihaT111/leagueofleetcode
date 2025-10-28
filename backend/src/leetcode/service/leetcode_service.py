@@ -27,7 +27,7 @@ class LeetCodeService:
     
     @staticmethod
     async def get_user_submissions(username: str):
-        data = await LeetCodeGraphQLClient.query(GET_USER_SUBMISSIONS, {"username": username})
+        data = await LeetCodeGraphQLClient.query(RECENT_AC_SUBMISSIONS_QUERY, {"username": username})
         return data["recentAcSubmissionList"]
     
     @staticmethod
