@@ -4,6 +4,7 @@ import { MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 
 import { montserrat, orbitron, geistSans, geistMono } from "./fonts";
+import ReactQueryProvider from "@/lib/queryProvider";
 
 export const metadata: Metadata = {
   title: "League of LeetCode",
@@ -33,7 +34,9 @@ export default function RootLayout({
             fontFamilyMonospace: "var(--font-geist-mono), monospace",
           }}
         >
-          {children}
+          <ReactQueryProvider>
+            {children}
+          </ReactQueryProvider>
         </MantineProvider>
       </body>
     </html>

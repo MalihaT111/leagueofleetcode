@@ -1,4 +1,5 @@
 # backend/src/database/query_executor.py
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import text
 import os
@@ -47,3 +48,14 @@ async def execute_query(query: str, params: dict = None, fetch: bool = True):
             await db.rollback()
             raise e
     return results
+
+
+# ✅ Wrap test in an async main function
+from pprint import pprint
+async def main():
+    data = await execute_query("SHOW COLUMNS IN users")
+    pprint(data)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

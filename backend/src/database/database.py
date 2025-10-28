@@ -5,6 +5,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Make sure your DATABASE_URL uses 'mysql+aiomysql://' 
+# Example: mysql+aiomysql://user:password@localhost:3306/your_db
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Async database setup

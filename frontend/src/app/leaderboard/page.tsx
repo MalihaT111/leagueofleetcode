@@ -3,7 +3,6 @@ import { montserrat } from "@/app/fonts";
 import React from "react";
 import Navbar from "@/components/navbar";
 import {
-
   Card,
   Flex,
   Group,
@@ -11,30 +10,46 @@ import {
   Text,
   Title,
   Avatar,
-  Badge,
   Divider,
+  Loader,
+  Center,
 } from "@mantine/core";
-
+import { useLeaderboardQuery } from "@/lib/api/queries/leaderboard";
 
 type Player = {
   rank: number;
   username: string;
   elo: number;
-  streak: number;
+  winstreak: number;
 };
-
-const leaderboard: Player[] = [
-  { rank: 1, username: "maliwali2004", elo: 6547389, streak: 12 },
-  { rank: 2, username: "coderX", elo: 6423912, streak: 9 },
-  { rank: 3, username: "devQueen", elo: 6384721, streak: 7 },
-  { rank: 4, username: "algoAce", elo: 6378000, streak: 5 },
-  { rank: 5, username: "leetLord", elo: 6350000, streak: 3 },
-];
 
 function LeaderboardTable() {
   const accent = "#d8a727"; // softer gold
   const bgEven = "#121212";
   const bgOdd = "#181818";
+
+  // ✅ use query data instead of hardcoded list
+  const { data, isLoading, isError } = useLeaderboardQuery();
+
+  if (isLoading) {
+    return (
+      <Center mih="60vh">
+        <Loader color={accent} />
+      </Center>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Center mih="60vh">
+        <Text c="red" fz="lg">
+          Failed to load leaderboard.
+        </Text>
+      </Center>
+    );
+  }
+
+  const leaderboard: Player[] = data ?? [];
 
   const rows = leaderboard.map((player) => (
     <tr
@@ -67,14 +82,13 @@ function LeaderboardTable() {
 
       <td style={{ textAlign: "center", width: 120 }}>
         <Text fw={700} fz="md" c="white" style={{ fontStyle: "italic" }}>
-          {player.streak}
+          {player.winstreak}
         </Text>
       </td>
     </tr>
   ));
 
   return (
-    
     <Card
       shadow="sm"
       radius="md"
@@ -82,7 +96,7 @@ function LeaderboardTable() {
       w={800}
       className={montserrat.className}
       style={{
-        backgroundColor: "#1a1a1a", 
+        backgroundColor: "#1a1a1a",
         border: `1px solid ${accent}`,
         boxShadow: `0 0 35px rgba(216,167,39,0.08)`,
       }}
@@ -92,11 +106,11 @@ function LeaderboardTable() {
         mb="sm"
         c={accent}
         ta="center"
-
-        style={{ letterSpacing: 0.8,
-            fontSize: "40px",
-            fontWeight: 700,
-            fontStyle: "italic",
+        style={{
+          letterSpacing: 0.8,
+          fontSize: "40px",
+          fontWeight: 700,
+          fontStyle: "italic",
         }}
       >
         LEADERBOARD
@@ -153,7 +167,7 @@ export default function LeaderboardPage() {
       bg="#0c0c0c"
       gap={40}
     >
-    <Navbar/>
+      <Navbar />
       <LeaderboardTable />
     </Flex>
   );
