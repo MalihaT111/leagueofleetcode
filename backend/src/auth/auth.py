@@ -1,0 +1,105 @@
+"""
+Complete FastAPI-users authentication setup.
+Everything you need for auth in one file.
+"""
+
+import os
+from typing import Optional
+from fastapi import Depends, Request
+from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
+from fastapi_users.authentication import (
+    AuthenticationBackend,
+    BearerTransport,
+    JWTStrategy,
+)
+from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users.password import PasswordHelper
+from sqlalchemy.ext.asyncio import AsyncSession
+from dotenv import load_dotenv
+from passlib.context import CryptContext
+
+from src.auth.models import User
+from src.auth.schemas import UserCreate, UserRead
+from src.database.database import get_db
+
+load_dotenv()
+
+# Configuration
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# Configure password context with bcrypt
+try:
+    # Try to configure bcrypt with explicit backend
+    password_context = CryptContext(
+        schemes=["bcrypt"], 
+        deprecated="auto",
+        bcrypt__rounds=12
+    )
+    password_helper = PasswordHelper(password_context)
+    print("✅ Bcrypt configured successfully")
+except Exception as e:
+    print(f"❌ Bcrypt configuration error: {e}")
+    # Fallback to a simpler configuration
+    password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+    password_helper = PasswordHelper(password_context)
+
+
+# User Manager
+class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+    reset_password_token_secret = SECRET_KEY
+    verification_token_secret = SECRET_KEY
+
+    def __init__(self, user_db: SQLAlchemyUserDatabase):
+        super().__init__(user_db)
+        # Use our custom password helper
+        self.password_helper = password_helper
+
+    async def on_after_register(self, user: User, request: Optional[Request] = None):
+        pass
+
+    async def on_after_forgot_password(self, user: User, token: str, request: Optional[Request] = None):
+        pass
+
+    async def on_after_request_verify(self, user: User, token: str, request: Optional[Request] = None):
+        pass
+    
+
+
+# Database adapter - using async session for FastAPI-users
+async def get_user_db(session: AsyncSession = Depends(get_db)):
+    yield SQLAlchemyUserDatabase(session, User)
+
+
+# User manager dependency
+async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
+    yield UserManager(user_db)
+
+
+# JWT Strategy
+def get_jwt_strategy() -> JWTStrategy:
+    return JWTStrategy(
+        secret=SECRET_KEY, 
+        lifetime_seconds=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
+
+# Authentication backend
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=BearerTransport(tokenUrl="auth/login"),
+    get_strategy=get_jwt_strategy,
+)
+
+# FastAPI Users instance
+fastapi_users = FastAPIUsers[User, int](
+    get_user_manager,
+    [auth_backend],
+)
+
+# Auth routes (ready to include in your main app)
+auth_router = fastapi_users.get_auth_router(auth_backend)  # /login, /logout
+register_router = fastapi_users.get_register_router(UserRead, UserCreate)  # /register
+
+# Current user dependency for protecting routes
+current_user = fastapi_users.current_user()
