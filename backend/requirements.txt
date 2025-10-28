@@ -44,6 +44,7 @@ packaging==25.0
 passlib==1.7.4
 playwright==1.55.0
 pluggy==1.6.0
+bcrypt==4.0.1
 propcache==0.3.2
 psycopg2-binary==2.9.10
 pwdlib==0.2.1

@@ -47,6 +47,19 @@ async def execute_query(query: str, params: dict = None, fetch: bool = True):
         except Exception as e:
             await db.rollback()
             raise e
+    async with AsyncSessionLocal() as db:
+        try:
+            statement = text(query)
+            res = await db.execute(statement, params or {})
+            if fetch:
+                # Convert results to list of dicts
+                columns = res.keys()
+                results = [dict(zip(columns, row)) for row in res.fetchall()]
+            else:
+                await db.commit()
+        except Exception as e:
+            await db.rollback()
+            raise e
     return results
 
 
