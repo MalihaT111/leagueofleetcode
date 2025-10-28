@@ -19,46 +19,16 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     email = Column("username", String(50), unique=True, nullable=False, index=True)  # username serves as email
     hashed_password = Column("password_hash", String(255), nullable=False)
     
-    # Your existing custom fields
+    # Your existing custom fields (matching actual database schema)
     leetcode_hash = Column(String(255), nullable=True)
-    leetcode_username = Column(String(50), unique=True, nullable=False)
+    leetcode_username = Column(String(50), nullable=True)  # Based on your schema
     user_elo = Column(Integer, default=1200)
-    repeating_questions = Column(Text, nullable=True)  # Assuming this stores JSON or text
-    difficulty = Column(String(20), nullable=True)  # e.g., "easy", "medium", "hard"
-    topics = Column(Text, nullable=True)  # Assuming this stores JSON or comma-separated topics
+    repeating_questions = Column(Boolean, default=False)  # tinyint(1) in your DB
+    difficulty = Column(Text, nullable=False, default='["2"]')  # JSON array with single digit string
+    topics = Column(Text, nullable=False, default='["1"]')  # JSON array with single digit strings
     
-    # FastAPI-users required fields (new columns to add to your table)
+    # FastAPI-users required fields (need to be added to your database)
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=True, nullable=False)
     
-    # Backward compatibility properties for your existing code
-    @property
-    def user_id(self) -> int:
-        """Backward compatibility: map id to user_id."""
-        return self.id
-    
-    @user_id.setter
-    def user_id(self, value: int) -> None:
-        """Backward compatibility: set id when user_id is assigned."""
-        self.id = value
-
-    @property
-    def username(self) -> str:
-        """Backward compatibility: map email to username."""
-        return self.email
-    
-    @username.setter
-    def username(self, value: str) -> None:
-        """Backward compatibility: set email when username is assigned."""
-        self.email = value
-
-    @property
-    def password_hash(self) -> str:
-        """Backward compatibility: map hashed_password to password_hash."""
-        return self.hashed_password
-    
-    @password_hash.setter
-    def password_hash(self, value: str) -> None:
-        """Backward compatibility: set hashed_password when password_hash is assigned."""
-        self.hashed_password = value
