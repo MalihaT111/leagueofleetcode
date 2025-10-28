@@ -28,6 +28,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     repeating_questions = Column(Boolean, default=False)  # tinyint(1) in your DB
     difficulty = Column(Text, nullable=False, default='["2"]')  # JSON array with single digit string
     topics = Column(Text, nullable=False, default='["1"]')  # JSON array with single digit strings
+    winstreak = Column(Text, nullable=False, default=0)
     
     # FastAPI-users required fields (need to be added to your database)
     is_active = Column(Boolean, default=True, nullable=False)

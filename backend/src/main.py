@@ -36,15 +36,11 @@ app.add_middleware(
 )
 
 
-app.include_router(user_router, prefix="/api/users", tags=["users"])
-app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
-app.include_router(leetcode_router, prefix="/api/leetcode", tags=["leetcode"])
-
-app.include_router(user_routes.router)
+app.include_router(user_routes.router, prefix="/api", tags=["user"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(register_router, prefix="/auth", tags=["auth"])
-
-app.include_router(matchhistory_router, prefix="/api/history", tags=["history"])
+app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])
+app.include_router(matchhistory_router, prefix="/api", tags=["history"])
 app.include_router(profile_router)
 # --- Root Health Check ---
 @app.get("/")
