@@ -1,12 +1,6 @@
-# backend/src/init_db.py
-import asyncio
-from src.database.database import init_db
-from src.database import models
+# backend/src/__init__.py
+# This file is for package initialization only
+# Table creation is handled by main.py startup
 
-async def main():
-    print("Creating tables...")
-    await init_db()
-    print("Tables created successfully!")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# If you need to create tables manually, run this in your virtual environment:
+# python -c "import asyncio; from src.database.database import init_db; asyncio.run(init_db())"
