@@ -1,7 +1,16 @@
 "use client";
+import React from "react";
 import { Card, Title, Table, Text } from "@mantine/core";
 
-export default function RecentSubmissionsTable({ user }: { user: any }) {
+export default function RecentSubmissionsTable() {
+  const rows = [...Array(5)].map((_, i) => (
+    <tr key={i}>
+      <td />
+      <td />
+      <td />
+    </tr>
+  ));
+
   return (
     <Card shadow="sm" radius="md" p="lg" w={380} bg="gray.3">
       <Title
@@ -18,21 +27,30 @@ export default function RecentSubmissionsTable({ user }: { user: any }) {
       <Table
         withColumnBorders
         withRowBorders
+        highlightOnHover={false}
         horizontalSpacing="sm"
         verticalSpacing="xs"
       >
         <thead style={{ backgroundColor: "black" }}>
           <tr>
-            <th><Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>DIFFICULTY</Text></th>
-            <th><Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>TOPICS</Text></th>
+            <th>
+              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                OUTCOME
+              </Text>
+            </th>
+            <th>
+              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                RATING CHANGE
+              </Text>
+            </th>
+            <th>
+              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                QUESTION
+              </Text>
+            </th>
           </tr>
         </thead>
-        <tbody style={{ backgroundColor: "black" }}>
-          <tr>
-            <td><Text c="white">{user.difficulty.join(", ")}</Text></td>
-            <td><Text c="white">{user.topics.slice(0, 8).join(", ")}...</Text></td>
-          </tr>
-        </tbody>
+        <tbody style={{ backgroundColor: "black" }}>{rows}</tbody>
       </Table>
     </Card>
   );
