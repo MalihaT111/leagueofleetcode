@@ -1,29 +1,28 @@
 # src/matchmaking/routes.py
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from .service import matchmaker
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from ..database.database import get_db
+from ..database.models import User
+from ..matchmaking.manager import MatchmakingManager
+from ..matchmaking.schemas import QueueResponse
 
-router = APIRouter()
+router = APIRouter(tags=["Matchmaking"])
+manager = MatchmakingManager()
 
-@router.websocket("/ws/matchmaking")
-async def matchmaking_ws(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        data = await websocket.receive_json()
-        user_id = data["user_id"]
-        elo = data["elo"]
+@router.post("/queue/{user_id}", response_model=QueueResponse)
+async def join_queue(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-        matchmaker.add_player(websocket, user_id, elo)
+    await manager.add_player(user.user_id, user.user_elo)
 
-        while True:
-            await asyncio.sleep(1)
-            match = matchmaker.find_match(user_id, elo)
-            if match:
-                opponent_ws, opponent_id, _ = match
-                await websocket.send_json({"match_found": True, "opponent_id": opponent_id})
-                await opponent_ws.send_json({"match_found": True, "opponent_id": user_id})
-                matchmaker.remove_player(user_id)
-                matchmaker.remove_player(opponent_id)
-                break
+    match = await manager.find_match(user.user_id, user.user_elo, db)
+    if match:
+        return QueueResponse(status="matched", match=match)
+    return QueueResponse(status="queued", match=None)
 
-    except WebSocketDisconnect:
-        matchmaker.remove_player(user_id)
+@router.post("/leave/{user_id}")
+async def leave_queue(user_id: int):
+    await manager.remove_player(user_id)
+    return {"status": "left"}

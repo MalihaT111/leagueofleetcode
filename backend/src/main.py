@@ -13,6 +13,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(matchmaking_router, prefix="/matchmaking", tags=["Matchmaking"])
-
-# Include routers
 app.include_router(user_routes.router)
+
+@app.get("/debug/routes")
+def get_routes():
+    return [route.path for route in app.routes]
