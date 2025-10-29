@@ -54,8 +54,8 @@ class UserCreate(schemas.BaseUserCreate):
     """Schema for creating users - requires your essential fields."""
     leetcode_username: str  # Required field
     user_elo: Optional[int] = 1200  # Default value
-    difficulty: Optional[List[str]] = ["1", "2", "3"]  # List of difficulty levels
-    topics: Optional[List[str]] = [str(i) for i in range(1, 74)]  # List of topic IDs
+    difficulty: Optional[List[str]] = ["1", "2", "3"]  # All difficulty levels by default
+    topics: Optional[List[str]] = [str(i) for i in range(1, 74)]  # All topic IDs by default
     repeating_questions: Optional[bool] = False  # tinyint(1) - default to False
     winstreak: Optional[int] = 0  # Win streak counter - default to 0
     
