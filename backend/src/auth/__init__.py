@@ -4,7 +4,7 @@ Import everything you need from here.
 """
 
 from .auth import auth_router, register_router, current_user, fastapi_users
-from .models import User
+from ..database.models import User
 from .schemas import UserCreate, UserRead, UserUpdate
 
 __all__ = [
