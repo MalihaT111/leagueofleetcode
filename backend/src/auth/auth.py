@@ -56,13 +56,36 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         self.password_helper = password_helper
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
-        pass
+        print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(self, user: User, token: str, request: Optional[Request] = None):
-        pass
+        print(f"User {user.id} has forgot their password. Reset token: {token}")
 
     async def on_after_request_verify(self, user: User, token: str, request: Optional[Request] = None):
-        pass
+        print(f"Verification requested for user {user.id}. Verification token: {token}")
+    
+    async def create(self, user_create: UserCreate, safe: bool = False, request: Optional[Request] = None) -> User:
+        """Override create method to handle duplicate username errors."""
+        try:
+            print(f"Creating user with data: {user_create.model_dump()}")
+            return await super().create(user_create, safe=safe, request=request)
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            error_msg = str(e)
+            if "Duplicate entry" in error_msg and "leetcode_username" in error_msg:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status_code=400, 
+                    detail="LeetCode username already exists. Please choose a different username."
+                )
+            elif "Duplicate entry" in error_msg and "username" in error_msg:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Email already exists. Please use a different email address."
+                )
+            else:
+                raise e
     
 
 
