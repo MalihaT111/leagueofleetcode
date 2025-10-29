@@ -15,6 +15,7 @@ class UserRead(schemas.BaseUser[int]):
     repeating_questions: Optional[bool] = False  # tinyint(1) - boolean
     difficulty: List[str] = ["1", "2", "3"]  # List of difficulty levels
     topics: List[str] = [str(i) for i in range(1, 74)]  # List of topic IDs
+    winstreak: int = 0  # Win streak counter
     
     # Note: email field comes from BaseUser and maps to your username column
 
@@ -25,6 +26,7 @@ class UserCreate(schemas.BaseUserCreate):
     difficulty: Optional[List[str]] = ["1", "2", "3"]  # List of difficulty levels
     topics: Optional[List[str]] = [str(i) for i in range(1, 74)]  # List of topic IDs
     repeating_questions: Optional[bool] = False  # tinyint(1) - default to False
+    winstreak: Optional[int] = 0  # Win streak counter - default to 0
     
 
 
@@ -36,3 +38,4 @@ class UserUpdate(schemas.BaseUserUpdate):
     repeating_questions: Optional[bool] = False 
     difficulty: Optional[str] = None
     topics: Optional[str] = None
+    winstreak: Optional[int] = None
