@@ -1,46 +1,23 @@
-from sqlalchemy.orm import Session
-from src.database.models import User
-from src.users.schemas import UserCreate
+# backend/src/users/service.py
+import json
+from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.hash import bcrypt
+from src.database import models
+from .schemas import UserCreate
 
-def create_user(db: Session, user: UserCreate):
-    existing = db.query(User).filter_by(username=user.username).first()
-    if existing:
-        raise ValueError("Username already exists")
-
+async def create_user(db: AsyncSession, user: UserCreate):
     hashed_pw = bcrypt.hash(user.password)
-    new_user = User(
-        username=user.username,
-        password_hash=hashed_pw,
+    db_user = models.User(
+        email=user.username,  # Map username to email field
+        hashed_password=hashed_pw,  # Use FastAPI-users field name
         leetcode_username=user.leetcode_username,
         leetcode_hash=user.leetcode_hash,
         user_elo=user.user_elo,
-        repeat=user.repeat,
-        difficulty=user.difficulty,
-        topics=user.topics
+        repeating_questions=user.repeat,  # Map repeat to repeating_questions
+        difficulty=json.dumps(user.difficulty) if user.difficulty else '["2"]',  # Convert list to JSON string
+        topics=json.dumps(user.topics) if user.topics else '["1"]',  # Convert list to JSON string
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-def get_user(db: Session, user_id: int):
-    return db.query(User).filter_by(user_id=user_id).first()
-
-def update_user(db: Session, user_id: int, updates: dict):
-    user = db.query(User).filter_by(user_id=user_id).first()
-    if not user:
-        return None
-    for key, value in updates.items():
-        setattr(user, key, value)
-    db.commit()
-    db.refresh(user)
-    return user
-
-def delete_user(db: Session, user_id: int):
-    user = db.query(User).filter_by(user_id=user_id).first()
-    if user:
-        db.delete(user)
-        db.commit()
-        return True
-    return False
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user

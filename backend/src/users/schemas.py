@@ -16,11 +16,18 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str  # plain text password for registration
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     user_id: int
+    username: str
+    leetcode_username: str
+    leetcode_hash: Optional[str] = None
+    user_elo: int
+    repeating_questions: bool
+    difficulty: List[str]
+    topics: List[str]
 
     class Config:
-        from_attributes = True  # (ORM mode in Pydantic v2)
+        populate_by_name = True
 
 class UserStats(BaseModel):
     username: str

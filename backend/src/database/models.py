@@ -33,3 +33,9 @@ class MatchHistory(Base):
     elo_change = Column(Integer, nullable=False)
     user_elo = Column(Integer, nullable=False)
     opponent_elo = Column(Integer, nullable=False)
+# backend/src/database/models.py
+# Import the FastAPI-users compatible User model
+from src.auth.models import User
+
+# Re-export User for backward compatibility
+__all__ = ["User"]

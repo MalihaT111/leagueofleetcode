@@ -55,3 +55,17 @@ RECENT_AC_SUBMISSIONS_QUERY = """
       }
   }
 """
+
+QUESTION_STATS_QUERY = """
+  query getUserProfile($username: String!) {
+      matchedUser(username: $username) {
+          username
+          submitStats {
+              acSubmissionNum {
+                  difficulty
+                  count
+              }
+          }
+      }
+  }
+"""
