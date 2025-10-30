@@ -5,7 +5,7 @@ from src.database.database import get_db
 
 from .service import calculate_user_stats
 
-router = APIRouter()
+router = APIRouter(prefix="/history")
 
 @router.get("/{user_id}")
 async def get_user_stats(user_id: int, db: AsyncSession = Depends(get_db)):

@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import desc, desc, select
+from sqlalchemy import desc, select
 from src.database.models import User
-from src.auth.models import User
 from src.database.database import get_db
 from src.users import service, schemas
 
@@ -36,6 +35,7 @@ async def get_user_by_id(user_id: int, db: AsyncSession = Depends(get_db)):
         "leetcode_hash": user.leetcode_hash,
         "leetcode_username": user.leetcode_username,
         "user_elo": user.user_elo
+    }
     
 @router.get("/leaderboard")
 async def get_leaderboard(db: AsyncSession = Depends(get_db)):

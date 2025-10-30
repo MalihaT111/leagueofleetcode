@@ -8,28 +8,20 @@ type RecentMatch = {
   question: string;
 };
 
-export default function RecentSubmissionsTable({ user }: { user: any }) {
-  const recentMatches: RecentMatch[] = user?.recent_matches || [];
+export default function RecentSubmissionsTable({ matches }: { matches: RecentMatch[] }) {
+  const recentMatches = matches || [];
 
   const rows =
     recentMatches.length > 0 ? (
       recentMatches.map((match, i) => (
         <tr key={i}>
           <td>
-            <Text
-              fw={600}
-              fz="sm"
-              c={match.outcome === "win" ? "green" : "red"}
-            >
+            <Text fw={600} fz="sm" c={match.outcome === "win" ? "green" : "red"}>
               {match.outcome.toUpperCase()}
             </Text>
           </td>
           <td>
-            <Text
-              fw={600}
-              fz="sm"
-              c={match.rating_change >= 0 ? "green" : "red"}
-            >
+            <Text fw={600} fz="sm" c={match.rating_change >= 0 ? "green" : "red"}>
               {match.rating_change >= 0
                 ? `+${match.rating_change}`
                 : match.rating_change}
