@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, desc
 
 from src.database.models import User as UserModel
-from src.history.models import MatchHistory
+from src.database.models import MatchHistory
 
 
 async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str, Any]]:
@@ -21,8 +21,8 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
         select(MatchHistory)
         .where(
             or_(
-                MatchHistory.user_id == user_id,
-                MatchHistory.opponent_user_id == user_id,
+                MatchHistory.winner_id == user_id,
+                MatchHistory.loser_id == user_id,
             )
         )
         .order_by(desc(MatchHistory.match_id))
@@ -32,13 +32,13 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
     # 3️⃣ Compute lifetime stats
     total_matches = len(all_matches)
     matches_won = sum(
-        1 for m in all_matches if m.user_id == user_id and m.game_status == "win"
+        1 for m in all_matches if m.winner_id == user_id
     )
     win_rate = round((matches_won / total_matches) * 100, 1) if total_matches > 0 else 0
 
     win_streak = 0
     for match in all_matches:
-        if match.user_id == user_id and match.game_status == "win":
+        if match.winner_id == user_id:
             win_streak += 1
         else:
             break  # streak ends once a non-win occurs
@@ -46,7 +46,7 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
     # 4️⃣ Prepare recent 5 matches
     recent_matches = [
         {
-            "outcome": "win" if m.game_status == "win" else "lose",
+            "outcome": "win" if m.winner_id == user_id else "loss",
             "rating_change": m.elo_change,
             "question": m.leetcode_problem,
         }

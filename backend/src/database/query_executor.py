@@ -20,7 +20,7 @@ AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False)
 # -----------------------------
 # General async query executor
 # -----------------------------
-async def execute_query(engine, query: str, params: dict = None, fetch: bool = True):
+async def execute_query(query: str, params: dict = None, fetch: bool = True):
 
     """
     Execute a raw SQL query against the RDS database asynchronously.
@@ -67,7 +67,7 @@ async def execute_query(engine, query: str, params: dict = None, fetch: bool = T
 # ✅ Wrap test in an async main function
 from pprint import pprint
 async def main():
-    data = await execute_query("SHOW COLUMNS IN users")
+    data = await execute_query(query="SHOW COLUMNS IN match_history")
     pprint(data)
 
 

@@ -8,7 +8,6 @@ class MatchBase(BaseModel):
     user_id: int
     opponent_user_id: int
     leetcode_problem: str
-    game_status: Literal["win", "lose", "resign", "timeout"]
     elo_change: int
     user_elo: int
     opponent_elo: int

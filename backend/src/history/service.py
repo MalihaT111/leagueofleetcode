@@ -1,7 +1,7 @@
 # backend/src/history/service.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
-from src.history.models import MatchHistory
+from sqlalchemy import select, or_, Enum
+from src.database.models import MatchHistory
 from src.history.schemas import UserStatsResponse, RecentMatch
 
 
@@ -10,8 +10,8 @@ async def calculate_user_stats(db: AsyncSession, user_id: int) -> UserStatsRespo
     result = await db.execute(
         select(MatchHistory)
         .where(or_(
-            MatchHistory.user_id == user_id,
-            MatchHistory.opponent_user_id == user_id
+            MatchHistory.winner_id == user_id,
+            MatchHistory.loser_id == user_id
         ))
         .order_by(MatchHistory.match_id)  # oldest -> newest
     )
@@ -30,8 +30,7 @@ async def calculate_user_stats(db: AsyncSession, user_id: int) -> UserStatsRespo
 
     # Count wins (handles both user perspectives)
     for m in matches:
-        if (m.user_id == user_id and m.game_status == "win") or \
-           (m.opponent_user_id == user_id and m.game_status == "loss"):
+        if (m.winner_id == user_id):
             wins += 1
 
     # Compute win rate
@@ -40,8 +39,7 @@ async def calculate_user_stats(db: AsyncSession, user_id: int) -> UserStatsRespo
     # Compute win streak (from most recent backwards)
     streak = 0
     for m in reversed(matches):
-        if (m.user_id == user_id and m.game_status == "win") or \
-           (m.opponent_user_id == user_id and m.game_status == "loss"):
+        if (m.winner_id == user_id):
             streak += 1
         else:
             break
@@ -49,11 +47,11 @@ async def calculate_user_stats(db: AsyncSession, user_id: int) -> UserStatsRespo
     # ✅ Build match summaries for *all* matches (not just last 5)
     all_matches = []
     for m in matches:
-        if m.user_id == user_id:
-            outcome = m.game_status
+        if m.winner_id == user_id:
+            outcome = "win"
             rating_change = m.elo_change
         else:
-            outcome = "win" if m.game_status == "lose" else "lose"
+            outcome = "lose"
             rating_change = -m.elo_change
 
         all_matches.append(

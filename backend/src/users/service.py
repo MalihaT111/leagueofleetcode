@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from src.database.models import User as UserModel
-from src.history.models import MatchHistory
+from src.database.models import MatchHistory
 
 
 async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str, Any]]:
@@ -26,8 +26,8 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
         select(MatchHistory)
         .where(
             or_(
-                MatchHistory.user_id == user_id,
-                MatchHistory.opponent_user_id == user_id,
+                MatchHistory.winner_id == user_id,
+                MatchHistory.loser_id == user_id,
             )
         )
         .order_by(MatchHistory.match_id.desc())
