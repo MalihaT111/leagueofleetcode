@@ -10,7 +10,10 @@ import { useParams } from "next/navigation";
 
 export default function ProfilePage() {
   const { id } = useParams();
-  const { data, isLoading, error } = useProfileQuery(id);
+  const userId = Number(id); // convert to number
+  
+  const { data, isLoading, error } = useProfileQuery(userId);
+  
 
   if (isLoading) return <p>Loading...</p>;
   if (error || !data) return <p>Failed to load profile data.</p>;

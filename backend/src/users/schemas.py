@@ -19,7 +19,12 @@ class UserProfile(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
+class UserSettings(BaseModel):
+    username: str
+    repeat: bool = False
+    difficulty: List[str] = ["1", "2", "3"]
+    topics: List[str] = [str(i) for i in range(1, 74)]  
+    model_config = ConfigDict(from_attributes=True)
 
 class UserCreate(UserBase):
     password: str  # plain text password for registration
@@ -39,7 +44,6 @@ class UserResponse(BaseModel):
 
 class UserStats(BaseModel):
     username: str
-    leetcode_hash: Optional[str]
     leetcode_username: str
     user_elo: int
 
