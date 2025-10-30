@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from src.matchmaking.routes import router as matchmaking_router
 
 from src.database.database import init_db
+from src.history.routes import router as matchhistory_router
+
 from src.users import routes as user_routes
 from src.auth.auth import auth_router, register_router, current_user
 from src.database.models import User
@@ -42,6 +44,7 @@ app.include_router(register_router, prefix="/auth", tags=["auth"])
 app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])
 app.include_router(matchhistory_router, prefix="/api", tags=["history"])
 app.include_router(profile_router)
+
 # --- Root Health Check ---
 @app.get("/")
 async def root():
