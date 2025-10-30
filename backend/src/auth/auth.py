@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 from passlib.context import CryptContext
 
-from src.auth.models import User
+from src.database.models import User
 from src.auth.schemas import UserCreate, UserRead
 from src.database.database import get_db
 

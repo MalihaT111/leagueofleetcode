@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from passlib.context import CryptContext
 
-from src.users import models, schemas  # use plural "models" to match convention
+from src.users import schemas
+from src.database.models import User
 
 # --- password hashing setup ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -17,9 +18,9 @@ def hash_password(password: str) -> str:
 
 def create_user(db: Session, user: schemas.UserCreate):
     # Check for duplicate username or leetcode_username
-    existing = db.query(models.User).filter(
-        (models.User.username == user.username) |
-        (models.User.leetcode_username == user.leetcode_username)
+    existing = db.query(User).filter(
+        (User.email == user.username) |
+        (User.leetcode_username == user.leetcode_username)
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username or LeetCode username already exists")
@@ -27,9 +28,9 @@ def create_user(db: Session, user: schemas.UserCreate):
     # Hash password before storing
     hashed_pw = hash_password(user.password)
 
-    new_user = models.User(
-        username=user.username,
-        password_hash=hashed_pw,
+    new_user = User(
+        email=user.username,
+        hashed_password=hashed_pw,
         leetcode_username=user.leetcode_username,
         leetcode_hash=user.leetcode_hash,
         user_elo=user.user_elo,
@@ -45,11 +46,11 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 
 def get_user(db: Session, user_id: int):
-    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
 def get_all_users(db: Session):
-    return db.query(models.User).all()
+    return db.query(User).all()
