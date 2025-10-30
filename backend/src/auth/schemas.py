@@ -6,6 +6,7 @@ from fastapi_users import schemas
 from typing import Optional, List
 from pydantic import field_validator, field_serializer
 import json
+from pydantic import field_validator
 
 
 class UserRead(schemas.BaseUser[int]):

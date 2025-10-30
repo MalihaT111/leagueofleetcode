@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"lucide-react": "^0.545.0",
+		"redis": "^5.9.0"
+	}
+}

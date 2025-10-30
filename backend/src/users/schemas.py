@@ -1,5 +1,5 @@
 # backend/src/users/schemas.py
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from pydantic import BaseModel
 from typing import List, Optional
@@ -12,6 +12,14 @@ class UserBase(BaseModel):
     repeat: bool = False
     difficulty: List[str] = ["1", "2", "3"]
     topics: List[str] = [str(i) for i in range(1, 74)]
+
+class UserProfile(BaseModel):
+    username: str
+    elo: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 
 class UserCreate(UserBase):
     password: str  # plain text password for registration

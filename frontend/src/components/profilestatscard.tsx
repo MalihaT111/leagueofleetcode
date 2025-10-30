@@ -11,21 +11,23 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default function ProfileStatsCard({ user }: { user: any }) {
+export default function ProfileStatsCard({
+  user,
+  stats,
+}: {
+  user: any;
+  stats: any;
+}) {
   return (
     <Card shadow="sm" radius="md" p="lg" w={280} bg="gray.3">
       <Flex direction="column" gap="md" align="flex-start">
-        <ProfileHeader username={user.username} />
+        <ProfileHeader username={user.username || `user_${user.id}`} />
 
         <Flex direction="column" gap={6} w="100%" mt="sm">
-          <Stat label="ELO" value={user.user_elo} />
-          <Stat label="Won" value={0} />
-            <Stat
-            label="Win Rate" value={0}
-          />
-          <Stat
-            label="Streak" value={0}
-          />
+          <Stat label="ELO" value={user.elo ?? "—"} />
+          <Stat label="Won" value={stats.matches_won ?? 0} />
+          <Stat label="Win Rate" value={`${stats.win_rate ?? 0}%`} />
+          <Stat label="Streak" value={stats.win_streak ?? 0} />
         </Flex>
       </Flex>
     </Card>
