@@ -10,10 +10,6 @@ class MatchHistory(Base):
     user_id = Column(Integer, nullable=False)
     opponent_user_id = Column(Integer, nullable=False)
     leetcode_problem = Column(String(255), nullable=False)
-    game_status = Column(
-        Enum("win", "lose", "resign", "timeout", name="game_status_enum"),
-        nullable=False
-    )
     elo_change = Column(Integer, nullable=False)
     user_elo = Column(Integer, nullable=False)
     opponent_elo = Column(Integer, nullable=False)

@@ -4,15 +4,14 @@ from ..database.models import MatchHistory
 from ..database.models import User
 
 
-async def create_match_record(db: AsyncSession, user: User, opponent: User):
+async def create_match_record(db: AsyncSession, winner: User, loser: User):
     match = MatchHistory(
-        user_id=user.id,
-        opponent_user_id=opponent.id,
+        winner_id=winner.id,
+        opponent_user_id=loser.id,
         leetcode_problem="TBD",
-        game_status="timeout",  # placeholder until match completes
         elo_change=0,
-        user_elo=user.user_elo,
-        opponent_elo=opponent.user_elo
+        winner_elo=winner.user_elo,
+        loser_elo=loser.user_elo
     )
     db.add(match)
     await db.commit()
