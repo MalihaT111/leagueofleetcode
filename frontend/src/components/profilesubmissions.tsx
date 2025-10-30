@@ -2,14 +2,55 @@
 import React from "react";
 import { Card, Title, Table, Text } from "@mantine/core";
 
-export default function RecentSubmissionsTable() {
-  const rows = [...Array(5)].map((_, i) => (
-    <tr key={i}>
-      <td />
-      <td />
-      <td />
-    </tr>
-  ));
+type RecentMatch = {
+  outcome: string;
+  rating_change: number;
+  question: string;
+};
+
+export default function RecentSubmissionsTable({ user }: { user: any }) {
+  const recentMatches: RecentMatch[] = user?.recent_matches || [];
+
+  const rows =
+    recentMatches.length > 0 ? (
+      recentMatches.map((match, i) => (
+        <tr key={i}>
+          <td>
+            <Text
+              fw={600}
+              fz="sm"
+              c={match.outcome === "win" ? "green" : "red"}
+            >
+              {match.outcome.toUpperCase()}
+            </Text>
+          </td>
+          <td>
+            <Text
+              fw={600}
+              fz="sm"
+              c={match.rating_change >= 0 ? "green" : "red"}
+            >
+              {match.rating_change >= 0
+                ? `+${match.rating_change}`
+                : match.rating_change}
+            </Text>
+          </td>
+          <td>
+            <Text fw={500} fz="sm" c="white">
+              {match.question}
+            </Text>
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan={3}>
+          <Text fz="sm" c="gray.5" ta="center" py="sm">
+            No recent submissions
+          </Text>
+        </td>
+      </tr>
+    );
 
   return (
     <Card shadow="sm" radius="md" p="lg" w={380} bg="gray.3">

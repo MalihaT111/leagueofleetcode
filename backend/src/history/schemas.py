@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Literal, Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Literal, List
 
 # -----------------------------
 # Base schema (shared fields)
@@ -13,17 +13,25 @@ class MatchBase(BaseModel):
     user_elo: int
     opponent_elo: int
 
-# -----------------------------
-# Schema for creating a new match
-# -----------------------------
-class MatchCreate(MatchBase):
-    pass  # nothing extra for now, but you could later add timestamp or notes
+    model_config = ConfigDict(from_attributes=True)  # ✅ v2 ORM support
 
 # -----------------------------
-# Schema for returning match info
+# Schema for a recent match summary
 # -----------------------------
-class MatchResponse(MatchBase):
-    match_id: int
+class RecentMatch(BaseModel):
+    outcome: Literal["win", "lose"]
+    rating_change: int
+    question: str
 
-    class Config:
-        from_attributes = True  # allows ORM → Pydantic conversion
+    model_config = ConfigDict(from_attributes=True)
+
+# -----------------------------
+# Schema for user stats response
+# -----------------------------
+class UserStatsResponse(BaseModel):
+    matches_won: int
+    win_rate: float
+    win_streak: int
+    recent_matches: List[RecentMatch]
+
+    model_config = ConfigDict(from_attributes=True)

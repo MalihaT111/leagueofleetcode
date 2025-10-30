@@ -38,7 +38,6 @@ MarkupSafe==3.0.3
 multidict==6.6.4
 mysql==0.0.3
 mysql-connector-python==9.4.0
-mysqlclient==2.2.7
 package_name==0.1
 packaging==25.0
 passlib==1.7.4

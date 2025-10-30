@@ -45,12 +45,9 @@ app.include_router(profile_router)
 # --- Root Health Check ---
 @app.get("/")
 async def root():
-
     return {"message": "LeetCode Tracker API running"}
     @app.get("/")
-async def root():
 
-    return {"message": "League of LeetCode API", "status": "running"}
 
 @app.get("/me")
 async def get_profile(user: User = Depends(current_user)):

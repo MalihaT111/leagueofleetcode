@@ -20,7 +20,8 @@ AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False)
 # -----------------------------
 # General async query executor
 # -----------------------------
-async def execute_query(query: str, params: dict = None, fetch: bool = True):
+async def execute_query(engine, query: str, params: dict = None, fetch: bool = True):
+
     """
     Execute a raw SQL query against the RDS database asynchronously.
 
