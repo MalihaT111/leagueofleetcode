@@ -1,6 +1,7 @@
 # src/matchmaking/manager.py
 import redis.asyncio as aioredis
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from ..database.models import User
 from ..matchmaking.service import create_match_record
 
@@ -24,7 +25,7 @@ class MatchmakingManager:
         redis = await self.connect()
         await redis.zrem(MATCHMAKING_KEY, user_id)
 
-    async def find_match(self, user_id: int, elo: int, db: Session):
+    async def find_match(self, user_id: int, elo: int, db: AsyncSession):
         redis = await self.connect()
 
         # Look for nearby players within ±100 ELO
@@ -39,17 +40,20 @@ class MatchmakingManager:
             await redis.zrem(MATCHMAKING_KEY, user_id, opp_id)
 
             # Retrieve opponent info from DB
-            opp = db.query(User).filter(User.user_id == opp_id).first()
-            user = db.query(User).filter(User.user_id == user_id).first()
+            opp_result = await db.execute(select(User).where(User.id == opp_id))
+            opp = opp_result.scalar_one_or_none()
+            
+            user_result = await db.execute(select(User).where(User.id == user_id))
+            user = user_result.scalar_one_or_none()
 
             if not opp or not user:
                 continue
 
             # Create match record
-            match = create_match_record(db, user, opp)
+            match = await create_match_record(db, user, opp)
             return {
                 "match_id": match.match_id,
-                "opponent": opp.username,
+                "opponent": opp.email,  # Using email which maps to username
                 "opponent_elo": opp.user_elo
             }
 

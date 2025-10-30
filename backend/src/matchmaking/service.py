@@ -1,13 +1,13 @@
 # src/matchmaking/service.py
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.models import MatchHistory
 from ..database.models import User
 
 
-def create_match_record(db: Session, user: User, opponent: User):
+async def create_match_record(db: AsyncSession, user: User, opponent: User):
     match = MatchHistory(
-        user_id=user.user_id,
-        opponent_user_id=opponent.user_id,
+        user_id=user.id,
+        opponent_user_id=opponent.id,
         leetcode_problem="TBD",
         game_status="timeout",  # placeholder until match completes
         elo_change=0,
@@ -15,6 +15,6 @@ def create_match_record(db: Session, user: User, opponent: User):
         opponent_elo=opponent.user_elo
     )
     db.add(match)
-    db.commit()
-    db.refresh(match)
+    await db.commit()
+    await db.refresh(match)
     return match
