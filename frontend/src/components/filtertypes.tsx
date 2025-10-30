@@ -9,12 +9,15 @@ import {
   Chip,
   Flex,
   ScrollArea,
+  Button,
+  Group,
 } from "@mantine/core";
 import { useSettings } from "@/lib/api/queries/settings";
 
 export default function FilterTypesCard() {
   const [search, setSearch] = useState("");
-  const { settings, loading, error, toggleTopic, isTopicOn } = useSettings();
+  const { settings, loading, error, toggleTopic, isTopicOn, updateSettings } =
+    useSettings();
 
   if (loading || !settings)
     return <Text c="gray.4">Loading settings...</Text>;
@@ -47,10 +50,21 @@ export default function FilterTypesCard() {
     "Rejection Sampling", "Biconnected Component",
   ];
 
-  // 🔎 Filtered by search term
+  // 🔎 Filtered list based on search term
   const filtered = filters.filter((f) =>
     f.toLowerCase().includes(search.toLowerCase())
   );
+
+  // ✅ “Select All” → sets all topics active
+  const handleSelectAll = () => {
+    const allIndices = filters.map((_, idx) => idx);
+    updateSettings({ topics: allIndices });
+  };
+
+  // 🔄 “Reset All” → clears all selected topics
+  const handleResetAll = () => {
+    updateSettings({ topics: [] });
+  };
 
   return (
     <Card shadow="sm" radius="md" p="lg" w={420} bg="gray.3">
@@ -74,7 +88,7 @@ export default function FilterTypesCard() {
         style={{
           borderColor: "#2f2f2f",
           minHeight: 250,
-          maxHeight: 300,
+          maxHeight: 340,
           overflow: "hidden",
         }}
       >
@@ -94,6 +108,45 @@ export default function FilterTypesCard() {
           }}
         />
 
+        {/* 🔘 Action Buttons */}
+        <Group justify="space-between" mb="sm">
+          <Button
+            variant="subtle"
+            color="gray"
+            size="xs"
+            radius="xl"
+            onClick={handleSelectAll}
+            styles={{
+              root: {
+                backgroundColor: "#2a2a2a",
+                color: "white",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: "#3a3a3a" },
+              },
+            }}
+          >
+            Select All
+          </Button>
+
+          <Button
+            variant="subtle"
+            color="gray"
+            size="xs"
+            radius="xl"
+            onClick={handleResetAll}
+            styles={{
+              root: {
+                backgroundColor: "#2a2a2a",
+                color: "white",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: "#3a3a3a" },
+              },
+            }}
+          >
+            Reset All
+          </Button>
+        </Group>
+
         <ScrollArea
           h={230}
           scrollbarSize={6}
@@ -111,8 +164,8 @@ export default function FilterTypesCard() {
                 size="sm"
                 radius="xl"
                 variant="filled"
-                checked={isTopicOn?.(idx)} // ✅ use backend state
-                onClick={() => toggleTopic?.(idx)} // ✅ toggle backend value
+                checked={isTopicOn?.(idx)}
+                onClick={() => toggleTopic?.(idx)}
                 styles={{
                   root: {
                     backgroundColor: isTopicOn?.(idx)

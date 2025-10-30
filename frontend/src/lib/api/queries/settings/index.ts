@@ -85,5 +85,6 @@ export function useSettings(userId: number = 1) {
     toggleTopic,
     isDifficultyOn,
     isTopicOn,
+    updateSettings
   };
 }
