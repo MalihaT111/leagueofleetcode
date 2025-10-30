@@ -60,8 +60,30 @@ export function useSettings(userId: number = 1) {
     updateSettings({ difficulty: newDiff });
   };
 
+  const toggleTopic = (topicId: number) => {
+    if (!settings) return;
+    const currentTopics = settings.topics || [];
+    const has = currentTopics.includes(topicId);
+    const newTopics = has
+      ? currentTopics.filter((t) => t !== topicId)
+      : [...currentTopics, topicId];
+    updateSettings({ topics: newTopics });
+  };
+
   const isDifficultyOn = (level: number) =>
     !!settings?.difficulty?.includes(level);
+  
+  const isTopicOn = (topicId: number) =>
+    !!settings?.topics?.includes(topicId);
 
-  return { settings, loading, error, toggleRepeat, toggleDifficulty, isDifficultyOn };
+  return {
+    settings,
+    loading,
+    error,
+    toggleRepeat,
+    toggleDifficulty,
+    toggleTopic,
+    isDifficultyOn,
+    isTopicOn,
+  };
 }
