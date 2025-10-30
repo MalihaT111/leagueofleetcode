@@ -22,7 +22,6 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
         "elo": user_row.elo,
     }
 
-    # Get last 10 matches involving the user
     history_result = await db.execute(
         select(MatchHistory)
         .where(
@@ -40,4 +39,27 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
     return {
         "user": user_data,
         "history": history,
+    }
+
+async def get_user_settings_data(db: AsyncSession, user_id: int) -> Optional[Dict[str, Any]]:
+    """Fetch all relevant user settings/preferences."""
+    result = await db.execute(
+        select(
+            UserModel.username,
+            UserModel.elo,
+            UserModel.repeat,
+            UserModel.difficulty,
+            UserModel.topics
+        ).where(UserModel.id == user_id)
+    )
+    row = result.one_or_none()
+    if not row:
+        return None
+
+    return {
+        "username": row.username,
+        "elo": row.elo,
+        "repeat": row.repeat,
+        "difficulty": row.difficulty,
+        "topics": row.topics,
     }

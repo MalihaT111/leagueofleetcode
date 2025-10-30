@@ -32,7 +32,6 @@ async def get_user_by_id(user_id: int, db: AsyncSession = Depends(get_db)):
     
     return {
         "username": user.email,  # Map email back to username for API response
-        "leetcode_hash": user.leetcode_hash,
         "leetcode_username": user.leetcode_username,
         "user_elo": user.user_elo
     }

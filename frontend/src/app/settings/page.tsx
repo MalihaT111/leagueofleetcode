@@ -8,6 +8,8 @@ import FilterTypesCard from "@/components/filtertypes";
 import Navbar from "@/components/navbar";
 
 export default function SettingsPage() {
+  const userId = 1; // ✅ Replace later with actual logged-in user
+
   return (
     <Flex
       direction="column"
@@ -18,7 +20,7 @@ export default function SettingsPage() {
       c="white"
       gap={40}
     >
-      <Navbar/>
+      <Navbar />
       <Title
         order={1}
         className={montserrat.className}
@@ -32,7 +34,8 @@ export default function SettingsPage() {
       </Title>
 
       <Flex gap={60} align="flex-start" justify="center">
-        <SettingsToggles />
+        {/* ✅ Pass userId as a prop to both */}
+        <SettingsToggles userId={userId} />
         <FilterTypesCard />
       </Flex>
     </Flex>
