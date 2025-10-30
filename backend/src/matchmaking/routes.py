@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database.database import get_db
-from ..auth.models import User
+from ..database.models import User
 from ..matchmaking.manager import MatchmakingManager
 from ..matchmaking.schemas import QueueResponse
 

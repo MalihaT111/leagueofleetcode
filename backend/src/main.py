@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from src.matchmaking.routes import router as matchmaking_router
 
 from src.database.database import init_db
 from src.users import routes as user_routes
@@ -14,6 +15,8 @@ async def lifespan(app: FastAPI):
     # Shutdown code (optional)
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(matchmaking_router, prefix="/matchmaking", tags=["Matchmaking"])
+
 
 # Add CORS middleware
 app.add_middleware(
