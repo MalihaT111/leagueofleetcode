@@ -15,7 +15,7 @@ async def get_settings_data(db: AsyncSession, user_id: int) -> Optional[UserSett
     return UserSettingsOut(
         username=user.username,
         repeat=user.repeating_questions,
-        difficulty=[int(d) for d in (user.difficulty or [])],
+        difficulty=[str(d) for d in (user.difficulty or [])],
         topics=[str(t) for t in (user.topics or [])]
     )
 

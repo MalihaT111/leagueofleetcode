@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.database import get_db
-from src.settings.service import get_settings_data
+from src.settings.service import get_settings_data, update_settings_data
 from src.settings.schemas import UserSettingsOut, UpdateUserSettings
 
 
