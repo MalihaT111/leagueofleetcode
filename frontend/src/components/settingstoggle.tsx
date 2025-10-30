@@ -1,62 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, Flex, Group, Text, Switch } from "@mantine/core";
 import ProfileHeader from "@/components/profilehead";
-import {
-  useSettingsQuery,
-  useUpdateSettingsMutation,
-} from "@/lib/api/queries/settings";
+import { useSettings } from "@/lib/api/queries/settings";
 
 export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
-  const { data: settings, isLoading, error } = useSettingsQuery(userId);
-  const updateSettings = useUpdateSettingsMutation(userId);
+  const {
+    settings,
+    loading,
+    error,
+    toggleRepeat,
+    toggleDifficulty,
+    isDifficultyOn,
+  } = useSettings(userId);
 
-  // 🔹 Keep local UI state in sync with backend
-  const [localSettings, setLocalSettings] = useState<any>(null);
-
-  useEffect(() => {
-    if (settings) setLocalSettings(settings);
-  }, [settings]);
-
-  if (isLoading || !localSettings)
+  if (loading || !settings)
     return <Text c="gray.4">Loading settings...</Text>;
-  if (error) return <Text c="red">Failed to load settings</Text>;
 
-  // 🧠 Check difficulty status
-  const isDifficultyOn = (level: number) =>
-    Array.isArray(localSettings.difficulty) &&
-    localSettings.difficulty.includes(level);
-
-  // 🧠 Toggle difficulty (1=Easy, 2=Medium, 3=Hard)
-  const handleDifficultyToggle = (level: number) => {
-    const current = Array.isArray(localSettings.difficulty)
-      ? [...localSettings.difficulty]
-      : [];
-
-    const newDifficulty = current.includes(level)
-      ? current.filter((l) => l !== level)
-      : [...current, level];
-
-    // 🔸 Update UI instantly
-    setLocalSettings({ ...localSettings, difficulty: newDifficulty });
-
-    // 🔸 Send update to backend
-    updateSettings.mutate({ difficulty: newDifficulty });
-  };
-
-  // 🧠 Toggle repeat
-  const handleRepeatToggle = () => {
-    const newRepeat = !localSettings.repeat;
-
-    setLocalSettings({ ...localSettings, repeat: newRepeat });
-    updateSettings.mutate({ repeat: newRepeat });
-  };
+  if (error)
+    return (
+      <Text c="red" fw={700}>
+        Failed to load settings
+      </Text>
+    );
 
   return (
     <Card shadow="sm" radius="md" p="lg" w={280} bg="gray.3">
       <Flex direction="column" gap="lg">
-        <ProfileHeader username={localSettings.username} />
+        <ProfileHeader username={settings.username} />
 
         <Flex direction="column" gap="md" mt="md">
           {/* Repeat */}
@@ -67,8 +39,8 @@ export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
             <Switch
               size="md"
               color="gray"
-              checked={!!localSettings.repeat}
-              onChange={handleRepeatToggle}
+              checked={!!settings.repeat}
+              onChange={toggleRepeat}
               onLabel="ON"
               offLabel="OFF"
               styles={{
@@ -92,7 +64,7 @@ export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
                 size="md"
                 color="gray"
                 checked={isDifficultyOn(level)}
-                onChange={() => handleDifficultyToggle(level)}
+                onChange={() => toggleDifficulty(level)}
                 onLabel="ON"
                 offLabel="OFF"
                 styles={{

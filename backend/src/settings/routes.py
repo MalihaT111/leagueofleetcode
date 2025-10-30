@@ -1,4 +1,3 @@
-# src/settings/routes.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.database import get_db
@@ -24,7 +23,7 @@ async def update_settings(user_id: int, updates: UpdateUserSettings, db: AsyncSe
     # Return updated state
     return {
         "username": user.username,
-        "repeat": user.repeat_questions,
+        "repeat": user.repeating_questions,
         "difficulty": user.difficulty,
         "topics": user.topics
     }

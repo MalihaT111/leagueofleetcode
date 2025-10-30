@@ -36,7 +36,7 @@ export default function SettingsPage() {
       <Flex gap={60} align="flex-start" justify="center">
         {/* ✅ Pass userId as a prop to both */}
         <SettingsToggles userId={userId} />
-        <FilterTypesCard userId={userId} />
+        <FilterTypesCard />
       </Flex>
     </Flex>
   );

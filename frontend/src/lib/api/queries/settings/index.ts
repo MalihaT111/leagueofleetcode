@@ -1,39 +1,67 @@
-import { useQuery } from "@tanstack/react-query";
+"use client";
 
-export const useSettingsQuery = (userId: number) => {
-  return useQuery({
-    queryKey: ["settings", userId], // 🔹 use "settings" not "profile"
-    queryFn: async () => {
-      if (!userId) throw new Error("No user ID provided");
-      const res = await fetch(`http://127.0.0.1:8000/api/settings/${userId}`);
-      if (!res.ok) throw new Error("Failed to fetch settings data");
-      return res.json();
-    },
-    enabled: !!userId, // 🔹 prevents the query from running if userId is undefined
-    staleTime: 1000 * 60 * 2, // optional: cache for 2 minutes
-  });
-};
+import { useState, useEffect } from "react";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+export interface Settings {
+  username: string;
+  repeat: boolean;
+  difficulty: number[];
+  topics?: number[];
+}
 
-export const useUpdateSettingsMutation = (userId: number) => {
-  const queryClient = useQueryClient();
+export function useSettings(userId: number = 1) {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return useMutation({
-    mutationFn: async (updates: any) => {
+  // Fetch settings
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/api/settings/${userId}`);
+        if (!res.ok) throw new Error("Failed to fetch settings");
+        const data = await res.json();
+        setSettings(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSettings();
+  }, [userId]);
+
+  // Update helper
+  async function updateSettings(updates: Partial<Settings>) {
+    if (!settings) return;
+    const updated = { ...settings, ...updates };
+    setSettings(updated); // optimistic UI update
+
+    try {
       const res = await fetch(`http://127.0.0.1:8000/api/settings/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
       if (!res.ok) throw new Error("Failed to update settings");
-      return res.json();
-    },
-    // useUpdateSettingsMutation.ts
-    onSuccess: (data) => {
-      queryClient.setQueryData(["settings", userId], data); // ✅ fixed key
-      queryClient.invalidateQueries({ queryKey: ["settings", userId] }); // optional: forces a refetch
-    },
+    } catch (err) {
+      setSettings(settings); // rollback on error
+    }
+  }
 
-  });
-};
+  // Simple toggle helpers
+  const toggleRepeat = () => updateSettings({ repeat: !settings?.repeat });
+  const toggleDifficulty = (level: number) => {
+    if (!settings) return;
+    const has = settings.difficulty.includes(level);
+    const newDiff = has
+      ? settings.difficulty.filter((l) => l !== level)
+      : [...settings.difficulty, level];
+    updateSettings({ difficulty: newDiff });
+  };
+
+  const isDifficultyOn = (level: number) =>
+    !!settings?.difficulty?.includes(level);
+
+  return { settings, loading, error, toggleRepeat, toggleDifficulty, isDifficultyOn };
+}

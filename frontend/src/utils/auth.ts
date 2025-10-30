@@ -9,7 +9,7 @@ export interface User {
   repeating_questions?: string | null;
   difficulty?: string | null;
   topics?: string | null;
-  is_active: boolean;
+is_active: boolean;
   is_verified: boolean;
   is_superuser: boolean;
 }

@@ -5,8 +5,8 @@ from typing import List, Optional
 class UserSettingsOut(BaseModel):
     username: str
     repeat: bool
-    difficulty: List[str]  # ✅ Fix: these are numbers
-    topics: List[str]      # ✅ topics too, since they’re numeric
+    difficulty: List[int]
+    topics: List[int]
 
     model_config = ConfigDict(from_attributes=True)
 

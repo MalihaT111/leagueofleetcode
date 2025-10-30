@@ -25,9 +25,9 @@ async def update_settings_data(db: AsyncSession, user_id: int, data: UpdateUserS
     user = result.scalar_one_or_none()
     if not user:
         return None
-
+    print(data)
     if data.repeat is not None:
-        user.repeat_questions = data.repeat
+        user.repeating_questions = data.repeat
     if data.difficulty is not None:
         user.difficulty = data.difficulty
     if data.topics is not None:
