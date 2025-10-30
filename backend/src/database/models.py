@@ -3,8 +3,9 @@ Database models for the application.
 """
 
 from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import Column, Integer, String, Boolean, Text
+from sqlalchemy import Column, Integer, String, Boolean, Text, JSON, Enum, ForeignKey
 from src.database.database import Base
+import enum
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -59,4 +60,25 @@ class User(SQLAlchemyBaseUserTable[int], Base):
         self.hashed_password = value
 
 
-__all__ = ["User"]
+    repeating_questions = Column(Boolean, default=False, nullable=False)
+    difficulty = Column(JSON, default=["1", "2", "3"], nullable=False)
+    topics = Column(JSON, default=[str(i) for i in range(1, 74)], nullable=False)
+# Enum for game_status
+class GameStatusEnum(enum.Enum):
+    win = "win"
+    lose = "lose"
+    resign = "resign"
+    timeout = "timeout"
+
+class MatchHistory(Base):
+    __tablename__ = "match_history"
+
+    match_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
+    opponent_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
+    leetcode_problem = Column(String(255), nullable=False)
+    game_status = Column(Enum(GameStatusEnum), nullable=False)
+    elo_change = Column(Integer, nullable=False)
+    user_elo = Column(Integer, nullable=False)
+    opponent_elo = Column(Integer, nullable=False)
+# backend/src/database/models.py
