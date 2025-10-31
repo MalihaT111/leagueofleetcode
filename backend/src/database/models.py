@@ -24,9 +24,9 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     leetcode_hash = Column(String(255), nullable=True)
     leetcode_username = Column(String(50), nullable=True)  # Based on your schema
     user_elo = Column(Integer, default=1200)
-    repeating_questions = Column(Boolean, default=False)  # tinyint(1) in your DB
-    difficulty = Column(Text, nullable=False, default='["1","2","3"]')  # All difficulties by default
-    topics = Column(Text, nullable=False, default='[' + ','.join([f'"{i}"' for i in range(1, 74)]) + ']')  # All topics by default
+    repeating_questions = Column(Boolean, default=False, nullable=False)
+    difficulty = Column(JSON, default=lambda: ["1", "2", "3"], nullable=False)
+    topics = Column(JSON, default=lambda: [str(i) for i in range(1, 74)], nullable=False)
     winstreak = Column(Integer, default=0, nullable=False)  # Win streak counter
     
     # FastAPI-users required fields (need to be added to your database)
@@ -58,11 +58,6 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     @password_hash.setter
     def password_hash(self, value):
         self.hashed_password = value
-
-
-    repeating_questions = Column(Boolean, default=False, nullable=False)
-    difficulty = Column(JSON, default=["1", "2", "3"], nullable=False)
-    topics = Column(JSON, default=[str(i) for i in range(1, 74)], nullable=False)
 
 class MatchHistory(Base):
     __tablename__ = "match_history"

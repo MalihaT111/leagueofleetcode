@@ -65,10 +65,15 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         print(f"Verification requested for user {user.id}. Verification token: {token}")
     
     async def create(self, user_create: UserCreate, safe: bool = False, request: Optional[Request] = None) -> User:
-        """Override create method to handle duplicate username errors."""
+        """Override create method to handle duplicate username errors and filter None values."""
         try:
             print(f"Creating user with data: {user_create.model_dump()}")
-            return await super().create(user_create, safe=safe, request=request)
+            
+            # Filter out None values to let database defaults work
+            user_data = user_create.model_dump(exclude_unset=True, exclude_none=True)
+            filtered_user_create = UserCreate(**user_data)
+            
+            return await super().create(filtered_user_create, safe=safe, request=request)
         except Exception as e:
             print(f"Error creating user: {e}")
             error_msg = str(e)

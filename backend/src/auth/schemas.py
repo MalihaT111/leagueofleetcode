@@ -54,11 +54,11 @@ class UserRead(schemas.BaseUser[int]):
 class UserCreate(schemas.BaseUserCreate):
     """Schema for creating users - requires your essential fields."""
     leetcode_username: str  # Required field
-    user_elo: Optional[int] = 1200  # Default value
-    difficulty: Optional[List[str]] = ["1", "2", "3"]  # All difficulty levels by default
-    topics: Optional[List[str]] = [str(i) for i in range(1, 74)]  # All topic IDs by default
-    repeating_questions: Optional[bool] = False  # tinyint(1) - default to False
-    winstreak: Optional[int] = 0  # Win streak counter - default to 0
+    user_elo: Optional[int] = None  # Let database default handle this
+    difficulty: Optional[List[str]] = None  # Let database default handle this
+    topics: Optional[List[str]] = None  # Let database default handle this
+    repeating_questions: Optional[bool] = None  # Let database default handle this
+    winstreak: Optional[int] = None  # Let database default handle this
     
     @field_validator('password')
     @classmethod
