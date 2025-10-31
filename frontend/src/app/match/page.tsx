@@ -4,23 +4,97 @@ import { useEffect, useState } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox";
 import { orbitron } from "../fonts";
+import { useLeaveQueue } from "@/lib/api/queries/matchmaking";
+import { joinQueue } from "@/lib/api/matchmaking";
+import { useRouter } from "next/navigation";
+import { AuthService } from "@/utils/auth";
+
+// Type definitions for match data
+interface MatchData {
+  match_id: number;
+  opponent: string;
+  opponent_elo: number;
+}
+
+interface QueueResponse {
+  status: string;
+  match: MatchData | null;
+}
 
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
+  const [polling, setPolling] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
+  
+  const leaveQueueMutation = useLeaveQueue();
+  const router = useRouter();
 
-  // start timer on mount
+  // Get current user on component mount
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const user = await AuthService.getCurrentUser();
+        setUserId(user.id);
+      } catch (error) {
+        console.error("Failed to get current user:", error);
+        // Redirect to login if not authenticated
+        router.push("/signin");
+      }
+    };
+
+    getCurrentUser();
+  }, [router]);
+
+  // Timer effect
   useEffect(() => {
     const interval = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
 
-    return () => clearInterval(interval); // cleanup on unmount
+    return () => clearInterval(interval);
   }, []);
+
+  // Polling effect for matchmaking
+  useEffect(() => {
+    if (!polling || !userId) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const result: QueueResponse = await joinQueue(userId);
+        
+        if (result.status === "matched" && result.match) {
+          setPolling(false);
+          console.log("Match found!", result.match);
+          // Redirect to match found page
+          router.push("/matchfound");
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [polling, userId, router]);
+
+  // Handle leaving queue
+  const handleLeaveQueue = async () => {
+    if (!userId) return;
+    
+    try {
+      await leaveQueueMutation.mutateAsync(userId);
+      setPolling(false);
+      router.push("/"); // Navigate back to home or previous page
+    } catch (error) {
+      console.error("Failed to leave queue:", error);
+    }
+  };
 
   // format as MM:SS
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+
 
   return (
     <Flex
@@ -102,6 +176,8 @@ export default function MatchmakingPage() {
         color="yellow"
         mt="xl"
         style={{ fontWeight: "bold" }}
+        onClick={handleLeaveQueue}
+        loading={leaveQueueMutation.isPending}
       >
         Cancel
       </Button>
