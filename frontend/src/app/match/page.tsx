@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox";
 import { orbitron } from "../fonts";
-import { useLeaveQueue } from "@/lib/api/queries/matchmaking";
-import { joinQueue } from "@/lib/api/matchmaking";
+import { useLeaveQueue, useMatchStatus, useJoinQueue } from "@/lib/api/queries/matchmaking";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/utils/auth";
 
@@ -23,27 +22,60 @@ interface QueueResponse {
 
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
-  const [polling, setPolling] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
+  const [inQueue, setInQueue] = useState(false);
+  const [hasJoinedQueue, setHasJoinedQueue] = useState(false);
+  const [matchFound, setMatchFound] = useState(false);
   
   const leaveQueueMutation = useLeaveQueue();
+  const joinQueueMutation = useJoinQueue();
   const router = useRouter();
+  
+  // Poll for match status when user is in queue
+  const { data: matchStatus } = useMatchStatus(userId || 0, inQueue && userId !== null);
 
-  // Get current user on component mount
+  // Get current user and join queue on component mount
   useEffect(() => {
-    const getCurrentUser = async () => {
+    if (hasJoinedQueue) return; // Prevent running multiple times
+    
+    const getCurrentUserAndJoinQueue = async () => {
       try {
         const user = await AuthService.getCurrentUser();
         setUserId(user.id);
+        setHasJoinedQueue(true); // Mark that we've attempted to join
+        
+        // Join queue immediately when page loads
+        const result = await joinQueueMutation.mutateAsync(user.id);
+        
+        console.log("Join queue result:", result);
+        
+        if (result.status === "matched" && result.match) {
+          // Immediate match found
+          console.log("Immediate match found!", result.match);
+          console.log("Navigating to /matchfound...");
+          setMatchFound(true);
+          router.push("/matchfound");
+        } else if (result.status === "queued") {
+          // Start polling for matches after a short delay
+          console.log("Added to queue, starting polling...");
+          setTimeout(() => {
+            setInQueue(true);
+          }, 1000); // Wait 1 second before starting to poll
+        } else {
+          console.error("Unexpected join queue result:", result);
+          console.log("Result status:", result.status);
+          console.log("Result match:", result.match);
+        }
       } catch (error) {
-        console.error("Failed to get current user:", error);
-        // Redirect to login if not authenticated
-        router.push("/signin");
+        console.error("Failed to get current user or join queue:", error);
+        console.error("Error details:", error instanceof Error ? error.message : String(error));
+        // Don't redirect to signin immediately, let user see the error
+        // router.push("/signin");
       }
     };
 
-    getCurrentUser();
-  }, [router]);
+    getCurrentUserAndJoinQueue();
+  }, [router]); // Remove joinQueueMutation from dependencies to prevent re-runs
 
   // Timer effect
   useEffect(() => {
@@ -54,27 +86,15 @@ export default function MatchmakingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Polling effect for matchmaking
+  // Check for match status updates
   useEffect(() => {
-    if (!polling || !userId) return;
-    
-    const interval = setInterval(async () => {
-      try {
-        const result: QueueResponse = await joinQueue(userId);
-        
-        if (result.status === "matched" && result.match) {
-          setPolling(false);
-          console.log("Match found!", result.match);
-          // Redirect to match found page
-          router.push("/matchfound");
-        }
-      } catch (error) {
-        console.error("Polling error:", error);
-      }
-    }, 2000); // Poll every 2 seconds
-
-    return () => clearInterval(interval);
-  }, [polling, userId, router]);
+    if (matchStatus?.status === "matched" && matchStatus.match && !matchFound) {
+      console.log("Match found via polling!", matchStatus.match);
+      setInQueue(false);
+      setMatchFound(true);
+      router.push("/matchfound");
+    }
+  }, [matchStatus, router, matchFound]);
 
   // Handle leaving queue
   const handleLeaveQueue = async () => {
@@ -82,7 +102,7 @@ export default function MatchmakingPage() {
     
     try {
       await leaveQueueMutation.mutateAsync(userId);
-      setPolling(false);
+      setInQueue(false);
       router.push("/"); // Navigate back to home or previous page
     } catch (error) {
       console.error("Failed to leave queue:", error);
