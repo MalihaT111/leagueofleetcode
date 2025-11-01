@@ -5,12 +5,12 @@ from typing import Literal, List
 # Base schema (shared fields)
 # -----------------------------
 class MatchBase(BaseModel):
-    user_id: int
-    opponent_user_id: int
+    winner_id: int
+    loser_id: int
     leetcode_problem: str
     elo_change: int
-    user_elo: int
-    opponent_elo: int
+    winner_elo: int
+    loser_elo: int
 
     model_config = ConfigDict(from_attributes=True)  # ✅ v2 ORM support
 

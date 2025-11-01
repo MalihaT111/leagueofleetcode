@@ -7,7 +7,7 @@ from ..database.models import User
 async def create_match_record(db: AsyncSession, winner: User, loser: User):
     match = MatchHistory(
         winner_id=winner.id,
-        opponent_user_id=loser.id,
+        loser_id=loser.id,
         leetcode_problem="TBD",
         elo_change=0,
         winner_elo=winner.user_elo,
