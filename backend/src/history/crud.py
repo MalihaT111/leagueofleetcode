@@ -10,6 +10,7 @@ from src.history import models, schemas
 #     return new_match
 
 def get_matches_by_user(db: Session, user_id: int):
-    return db.query(models.MatchHistoryModel).filter(
-        models.MatchHistoryModel.user_id == user_id
+    return db.query(models.MatchHistory).filter(
+        (models.MatchHistory.winner_id == user_id) | 
+        (models.MatchHistory.loser_id == user_id)
     ).all()
