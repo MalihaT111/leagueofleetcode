@@ -23,7 +23,13 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
         leetcode_problem="TBD",  # Indicates active/pending match
         elo_change=0,
         winner_elo=user.user_elo,
-        loser_elo=opponent.user_elo
+        loser_elo=opponent.user_elo,
+        match_seconds = 0,
+        winner_runtime = 0,
+        loser_runtime = 0,
+        winner_memory = 0.0,
+        loser_memory = 0.0
+        
     )
     db.add(match)
     await db.commit()
