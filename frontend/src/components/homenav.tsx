@@ -14,7 +14,7 @@ export default function HomeNavbar() {
     if (currentUserId) {
       router.push(`/profile/${currentUserId}`);
     } else {
-      router.push("/login");
+      router.push("/signin");
     }
   };
 
