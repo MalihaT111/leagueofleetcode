@@ -2,6 +2,7 @@
 
 import { Group, Flex, Text } from "@mantine/core";
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 
 export default function Navbar() {
   const links = [
@@ -54,7 +55,7 @@ export default function Navbar() {
         </Text>
       </Link>
 
-      {/* Links (Leaderboard, Match, Settings) */}
+      {/* Links (Leaderboard, Match, Settings) and Logout */}
       <Group>
         {links.map((link) => (
           <Link
@@ -67,6 +68,7 @@ export default function Navbar() {
             {link.label.toUpperCase()}
           </Link>
         ))}
+        <LogoutButton />
       </Group>
     </Flex>
   );
