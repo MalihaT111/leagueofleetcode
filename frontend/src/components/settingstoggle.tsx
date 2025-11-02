@@ -27,7 +27,7 @@ export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
   return (
     <Card shadow="sm" radius="md" p="lg" w={280} bg="gray.3">
       <Flex direction="column" gap="lg">
-        <ProfileHeader username={settings.username} />
+        <ProfileHeader username={settings.leetcode_username} />
 
         <Flex direction="column" gap="md" mt="md">
           {/* Repeat */}

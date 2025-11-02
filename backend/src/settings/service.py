@@ -13,6 +13,7 @@ async def get_settings_data(db: AsyncSession, user_id: int) -> Optional[UserSett
         return None
 
     return UserSettingsOut(
+        leetcode_username=user.leetcode_username,
         username=user.username,
         repeat=user.repeating_questions,
         difficulty=[str(d) for d in (user.difficulty or [])],

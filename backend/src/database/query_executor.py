@@ -66,8 +66,9 @@ async def execute_query(query: str, params: dict = None, fetch: bool = True):
 
 # ✅ Wrap test in an async main function
 from pprint import pprint
+
 async def main():
-    data = await execute_query(query="SHOW COLUMNS IN match_history")
+    data = await execute_query(query="SELECT * FROM users")
     pprint(data)
 
 
