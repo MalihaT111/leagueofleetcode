@@ -94,7 +94,7 @@ export default function SettingsPage() {
       <Flex gap={60} align="flex-start" justify="center">
         {/* ✅ Uses real logged-in user */}
         <SettingsToggles userId={userId} />
-        <FilterTypesCard />
+        <FilterTypesCard userId={userId}/>
       </Flex>
     </Flex>
   );
