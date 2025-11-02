@@ -8,7 +8,11 @@ type RecentMatch = {
   question: string;
 };
 
-export default function RecentSubmissionsTable({ matches }: { matches: RecentMatch[] }) {
+export default function RecentSubmissionsTable({
+  matches,
+}: {
+  matches: RecentMatch[];
+}) {
   const recentMatches = matches || [];
 
   const rows =
@@ -16,7 +20,11 @@ export default function RecentSubmissionsTable({ matches }: { matches: RecentMat
       recentMatches.map((match, i) => (
         <tr key={i}>
           <td>
-            <Text fw={600} fz="sm" c={match.outcome === "win" ? "green" : "red"}>
+            <Text
+              fw={600}
+              fz="sm"
+              c={match.outcome === "win" ? "green" : "red"}
+            >
               {match.outcome.toUpperCase()}
             </Text>
           </td>
@@ -26,7 +34,7 @@ export default function RecentSubmissionsTable({ matches }: { matches: RecentMat
               fz="sm"
               c={match.outcome === "win" ? "green" : "red"}
             >
-              {match.outcome ==="win"
+              {match.outcome === "win"
                 ? `+${match.rating_change}`
                 : `-${match.rating_change}`}
             </Text>

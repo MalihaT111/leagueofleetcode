@@ -9,7 +9,7 @@ export interface User {
   repeating_questions?: string | null;
   difficulty?: string | null;
   topics?: string | null;
-is_active: boolean;
+  is_active: boolean;
   is_verified: boolean;
   is_superuser: boolean;
 }
@@ -52,7 +52,7 @@ export class AuthService {
   // API calls
   static async login(
     email: string,
-    password: string
+    password: string,
   ): Promise<{ access_token: string; token_type: string }> {
     const response = await fetch(`${this.API_BASE_URL}/auth/login`, {
       method: "POST",
@@ -176,7 +176,7 @@ export class AuthService {
   // Helper method to make authenticated API calls
   static async authenticatedFetch(
     url: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<Response> {
     const token = this.getToken();
     if (!token) {

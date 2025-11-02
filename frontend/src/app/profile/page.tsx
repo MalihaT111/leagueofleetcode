@@ -32,7 +32,11 @@ export default function PersonalProfilePage() {
   const user = data ?? { id: 0, username: "Unknown", elo: 0 };
 
   // ✅ If your /me endpoint includes stats and matches:
-  const stats = (data as any)?.stats ?? { matches_won: 0, win_rate: 0, win_streak: 0 };
+  const stats = (data as any)?.stats ?? {
+    matches_won: 0,
+    win_rate: 0,
+    win_streak: 0,
+  };
   const recent_matches = (data as any)?.recent_matches ?? [];
 
   return (

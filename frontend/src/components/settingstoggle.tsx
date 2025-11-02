@@ -15,8 +15,7 @@ export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
     isDifficultyOn,
   } = useSettings(userId);
 
-  if (loading || !settings)
-    return <Text c="gray.4">Loading settings...</Text>;
+  if (loading || !settings) return <Text c="gray.4">Loading settings...</Text>;
 
   if (error)
     return (

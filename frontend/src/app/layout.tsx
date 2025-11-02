@@ -34,9 +34,7 @@ export default function RootLayout({
             fontFamilyMonospace: "var(--font-geist-mono), monospace",
           }}
         >
-          <ReactQueryProvider>
-            {children}
-          </ReactQueryProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
         </MantineProvider>
       </body>
     </html>

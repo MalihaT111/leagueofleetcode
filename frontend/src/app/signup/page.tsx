@@ -30,7 +30,7 @@ export default function SignUpPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (error) setError(""); 
+    if (error) setError("");
   };
 
   const validateForm = () => {
@@ -111,7 +111,8 @@ export default function SignUpPage() {
               ACCOUNT CREATED!
             </Title>
             <Text c="gray.4">
-              Your account has been successfully created. Redirecting to sign in...
+              Your account has been successfully created. Redirecting to sign
+              in...
             </Text>
             <Link href="/signin">
               <Button
@@ -245,9 +246,7 @@ export default function SignUpPage() {
                 label="Password"
                 placeholder="Enter your password"
                 value={formData.password}
-                onChange={(e) =>
-                  handleInputChange("password", e.target.value)
-                }
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 required
                 styles={{
                   label: {

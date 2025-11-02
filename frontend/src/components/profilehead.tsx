@@ -19,7 +19,6 @@ export default function ProfileHeader({
       p="md"
       style={{
         borderRadius: 8,
-
       }}
     >
       <Avatar size={60} radius="xl" color={avatarColor} />
@@ -30,7 +29,6 @@ export default function ProfileHeader({
       >
         {username}
       </Text>
-
     </Flex>
   );
 }

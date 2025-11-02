@@ -25,7 +25,7 @@ export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
   const [polling, setPolling] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
-  
+
   const leaveQueueMutation = useLeaveQueue();
   const router = useRouter();
 
@@ -57,11 +57,11 @@ export default function MatchmakingPage() {
   // Polling effect for matchmaking
   useEffect(() => {
     if (!polling || !userId) return;
-    
+
     const interval = setInterval(async () => {
       try {
         const result: QueueResponse = await joinQueue(userId);
-        
+
         if (result.status === "matched" && result.match) {
           setPolling(false);
           console.log("Match found!", result.match);
@@ -79,7 +79,7 @@ export default function MatchmakingPage() {
   // Handle leaving queue
   const handleLeaveQueue = async () => {
     if (!userId) return;
-    
+
     try {
       await leaveQueueMutation.mutateAsync(userId);
       setPolling(false);
@@ -94,8 +94,6 @@ export default function MatchmakingPage() {
   const secs = seconds % 60;
   const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
-
-
   return (
     <Flex
       h="100vh"
@@ -107,7 +105,7 @@ export default function MatchmakingPage() {
       c="white"
       gap="xl"
     >
-    <Navbar/>
+      <Navbar />
       <Title
         style={{
           fontSize: "70px",
@@ -151,16 +149,16 @@ export default function MatchmakingPage() {
             }}
           />
           <Text
-              size="sm"
-              className={orbitron.className}
-              style={{
-                fontSize: "28px",
-                fontWeight: 700,
-                letterSpacing: "2px",
-              }}
-            >
-              {formatted}
-        </Text>
+            size="sm"
+            className={orbitron.className}
+            style={{
+              fontSize: "28px",
+              fontWeight: 700,
+              letterSpacing: "2px",
+            }}
+          >
+            {formatted}
+          </Text>
         </Stack>
 
         <Stack align="center" gap="xs">
