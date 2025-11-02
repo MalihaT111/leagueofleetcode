@@ -22,7 +22,6 @@ async def update_settings(user_id: int, updates: UpdateUserSettings, db: AsyncSe
 
     # Return updated state
     return {
-        "username": user.username,
         "repeat": user.repeating_questions,
         "difficulty": user.difficulty,
         "topics": user.topics
