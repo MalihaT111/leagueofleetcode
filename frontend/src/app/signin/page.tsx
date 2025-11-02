@@ -27,7 +27,7 @@ export default function SignInPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (error) setError(""); 
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,9 +133,7 @@ export default function SignInPage() {
                 label="Password"
                 placeholder="Enter your password"
                 value={formData.password}
-                onChange={(e) =>
-                  handleInputChange("password", e.target.value)
-                }
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 required
                 styles={{
                   label: {

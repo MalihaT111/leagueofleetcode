@@ -60,7 +60,7 @@ export default function MatchFoundPage() {
       c="white"
       gap="lg"
     >
-      <Navbar/>
+      <Navbar />
       {/* Title */}
       <Title
         order={1}
@@ -113,7 +113,11 @@ export default function MatchFoundPage() {
           radius="sm"
           variant="filled"
           color="gray"
-          style={{ fontWeight: "bold", backgroundColor: "#E5E5E5", color: "black" }}
+          style={{
+            fontWeight: "bold",
+            backgroundColor: "#E5E5E5",
+            color: "black",
+          }}
         >
           Submit
         </Button>
@@ -122,7 +126,11 @@ export default function MatchFoundPage() {
           radius="sm"
           variant="filled"
           color="gray"
-          style={{ fontWeight: "bold", backgroundColor: "#E5E5E5", color: "black" }}
+          style={{
+            fontWeight: "bold",
+            backgroundColor: "#E5E5E5",
+            color: "black",
+          }}
         >
           Resign
         </Button>

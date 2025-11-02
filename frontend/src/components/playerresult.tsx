@@ -10,7 +10,13 @@ interface PlayerResultProps {
   active?: boolean;
 }
 
-export function PlayerResult({ name, tag, isWinner, onClick, active }: PlayerResultProps) {
+export function PlayerResult({
+  name,
+  tag,
+  isWinner,
+  onClick,
+  active,
+}: PlayerResultProps) {
   // Size depends ONLY on active state
   const isLarge = !!active;
 
@@ -24,8 +30,8 @@ export function PlayerResult({ name, tag, isWinner, onClick, active }: PlayerRes
         backgroundColor: isWinner
           ? "#FFBD42" // gold if winner
           : active
-          ? "#555" // highlight active non-winner
-          : "#444",
+            ? "#555" // highlight active non-winner
+            : "#444",
         padding: isLarge ? "20px 28px" : "14px 22px",
         width: isLarge ? "360px" : "320px",
         height: isLarge ? "70px" : "56px",
@@ -36,8 +42,8 @@ export function PlayerResult({ name, tag, isWinner, onClick, active }: PlayerRes
         boxShadow: isWinner
           ? "0 0 14px rgba(255, 189, 66, 0.6)"
           : active
-          ? "0 0 8px rgba(255, 255, 255, 0.2)"
-          : "none",
+            ? "0 0 8px rgba(255, 255, 255, 0.2)"
+            : "none",
         zIndex: isLarge ? 2 : 1,
         transition: "all 0.25s ease",
       }}

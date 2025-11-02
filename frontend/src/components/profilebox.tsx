@@ -1,7 +1,7 @@
 import { Box, Stack, Text } from "@mantine/core";
 
 interface ProfileBoxProps {
-  username?: string;   // undefined = unknown player
+  username?: string; // undefined = unknown player
   rating?: number;
 }
 
@@ -32,9 +32,7 @@ export function ProfileBox({ username, rating }: ProfileBoxProps) {
             ?
           </Text>
         ) : (
-          <Text fw={700} fz={32}>
-
-          </Text> // placeholder avatar (initial letter)
+          <Text fw={700} fz={32}></Text> // placeholder avatar (initial letter)
         )}
       </Box>
 

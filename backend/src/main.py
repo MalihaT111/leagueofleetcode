@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from src.database.database import init_db
 from src.matchmaking.routes import router as matchmaking_router
+from src.results.routes import router as result_router
 from src.history.routes import router as matchhistory_router
 from src.users import routes as user_routes
 from src.auth.auth import auth_router, register_router, current_user
@@ -35,6 +36,7 @@ app.add_middleware(
 
 # --- Routers ---
 app.include_router(matchmaking_router, prefix="/matchmaking", tags=["Matchmaking"])
+app.include_router(result_router, prefix="/api", tags=["Match Results"])
 app.include_router(user_routes.router, prefix="/api", tags=["user"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(register_router, prefix="/auth", tags=["auth"])

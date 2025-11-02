@@ -17,7 +17,7 @@ export default function AuthGuard({ children, fallback }: AuthGuardProps) {
     const checkAuth = async () => {
       try {
         const token = AuthService.getToken();
-        
+
         if (!token) {
           setIsAuthenticated(false);
           router.push("/signin");
@@ -42,34 +42,44 @@ export default function AuthGuard({ children, fallback }: AuthGuardProps) {
   if (isAuthenticated === null) {
     return (
       fallback || (
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          backgroundColor: "#1a1a1a",
-          color: "white"
-        }}>
-          <div style={{
+        <div
+          style={{
             display: "flex",
-            flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
-            gap: "16px"
-          }}>
-            <div style={{
-              width: "40px",
-              height: "40px",
-              border: "4px solid #333",
-              borderTop: "4px solid #FFBD42",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite"
-            }}></div>
+            height: "100vh",
+            backgroundColor: "#1a1a1a",
+            color: "white",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                border: "4px solid #333",
+                borderTop: "4px solid #FFBD42",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            ></div>
             <p>Checking authentication...</p>
           </div>
           <style jsx>{`
             @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+              0% {
+                transform: rotate(0deg);
+              }
+              100% {
+                transform: rotate(360deg);
+              }
             }
           `}</style>
         </div>

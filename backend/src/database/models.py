@@ -71,7 +71,7 @@ class MatchHistory(Base):
     loser_elo = Column(Integer, nullable=False)
     match_seconds = Column(Integer, nullable=False)
     winner_runtime = Column(Integer, nullable=False)
-    lower_runtime = Column(Integer, nullable=False)
+    loser_runtime = Column(Integer, nullable=False)
     winner_memory = Column(Float, nullable=False)
     loser_memory = Column(Float, nullable=False)
     

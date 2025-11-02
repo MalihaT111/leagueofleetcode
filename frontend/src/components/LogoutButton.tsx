@@ -12,7 +12,7 @@ export default function LogoutButton() {
     try {
       // Get current user to leave queue before logging out
       const user = await AuthService.getCurrentUser();
-      
+
       // Leave matchmaking queue if user is authenticated
       try {
         await leaveQueue(user.id);
@@ -20,7 +20,7 @@ export default function LogoutButton() {
         console.warn("Failed to leave queue during logout:", queueError);
         // Don't block logout if leaving queue fails
       }
-      
+
       // Proceed with logout
       await AuthService.logout();
       router.push("/signin");
@@ -45,9 +45,9 @@ export default function LogoutButton() {
       }}
       styles={{
         root: {
-          '&:hover': {
-            backgroundColor: 'rgba(255, 0, 0, 0.1)',
-            color: '#ff6b6b',
+          "&:hover": {
+            backgroundColor: "rgba(255, 0, 0, 0.1)",
+            color: "#ff6b6b",
           },
         },
       }}
