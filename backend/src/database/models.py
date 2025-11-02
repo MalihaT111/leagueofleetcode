@@ -1,7 +1,7 @@
 """
 Database models for the application.
 """
-
+from sqlalchemy.ext.mutable import MutableList
 from fastapi_users.db import SQLAlchemyBaseUserTable
 from sqlalchemy import Column, Integer, String, Boolean, Float, Text, JSON, Enum, ForeignKey
 from src.database.database import Base
@@ -25,8 +25,8 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     leetcode_username = Column(String(50), nullable=True)  # Based on your schema
     user_elo = Column(Integer, default=1200)
     repeating_questions = Column(Boolean, default=False, nullable=False)
-    difficulty = Column(JSON, default=lambda: ["1", "2", "3"], nullable=False)
-    topics = Column(JSON, default=lambda: [str(i) for i in range(1, 74)], nullable=False)
+    difficulty = Column(MutableList.as_mutable(JSON), default=lambda: [1, 2, 3], nullable=False)
+    topics = Column(MutableList.as_mutable(JSON), default=lambda: list(range(1, 74)), nullable=False)
     winstreak = Column(Integer, default=0, nullable=False)  # Win streak counter
     
     # FastAPI-users required fields (need to be added to your database)

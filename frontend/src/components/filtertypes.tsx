@@ -14,10 +14,10 @@ import {
 } from "@mantine/core";
 import { useSettings } from "@/lib/api/queries/settings";
 
-export default function FilterTypesCard() {
+export default function FilterTypesCard({ userId = 1 }: { userId?: number }) {
   const [search, setSearch] = useState("");
   const { settings, loading, error, toggleTopic, isTopicOn, updateSettings } =
-    useSettings();
+    useSettings(userId);
 
   if (loading || !settings) return <Text c="gray.4">Loading settings...</Text>;
 

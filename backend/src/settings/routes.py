@@ -19,9 +19,11 @@ async def update_settings(user_id: int, updates: UpdateUserSettings, db: AsyncSe
     user = await update_settings_data(db, user_id, updates)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
+    print(updates)
     # Return updated state
     return {
+        "leetcode_username": user.leetcode_username, 
+        "username":user.username,
         "repeat": user.repeating_questions,
         "difficulty": user.difficulty,
         "topics": user.topics

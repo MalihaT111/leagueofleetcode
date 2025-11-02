@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 export interface Settings {
+  leetcode_username: string; 
   username: string;
   repeat: boolean;
   difficulty: number[];
@@ -67,7 +68,7 @@ export function useSettings(userId: number = 1) {
     const newTopics = has
       ? currentTopics.filter((t) => t !== topicId)
       : [...currentTopics, topicId];
-    updateSettings({ topics: newTopics });
+      updateSettings({ topics: newTopics.map(Number) });
   };
 
   const isDifficultyOn = (level: number) =>
