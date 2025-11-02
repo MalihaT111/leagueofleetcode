@@ -106,14 +106,12 @@ export default function MatchResultPage() {
     winner: {
       executionTime: `${result.winner.runtime} ms`,
       memoryUsage: `${result.winner.memory} MB`,
-      approach: "Optimized Solution",
-      description: "Winner’s implementation",
+      description: "Winner's Stats:",
     },
     loser: {
       executionTime: `${result.loser.runtime} ms`,
       memoryUsage: `${result.loser.memory} MB`,
-      approach: "Alternative Solution",
-      description: "Loser’s implementation",
+      description: "Loser's implementation",
     },
   };
 
@@ -156,22 +154,11 @@ export default function MatchResultPage() {
               height: "260px",
             }}
           >
-            <Stack gap="lg" h="100%" justify="space-between">
-              {/* Approach */}
+            <Stack gap="sm" h="100%" justify="space-between">
               <Stack gap="xs">
-                <Text size="sm" c="dimmed" tt="uppercase" fw={600}>
-                  Approach
-                </Text>
                 <Text size="lg" fw={600}>
-                  {performanceData[selectedPlayer].approach}
-                </Text>
-                <Text size="sm" c="gray.4">
                   {performanceData[selectedPlayer].description}
                 </Text>
-              </Stack>
-
-              {/* Performance Metrics */}
-              <Stack gap="md">
                 <Flex
                   justify="space-between"
                   align="center"
@@ -179,7 +166,7 @@ export default function MatchResultPage() {
                   style={{ backgroundColor: "#1a1a1a", borderRadius: "8px" }}
                 >
                   <Text size="sm" c="dimmed">
-                    Runtime ⏱️
+                    Runtime:
                   </Text>
                   <Text
                     size="lg"
@@ -201,7 +188,7 @@ export default function MatchResultPage() {
                   style={{ backgroundColor: "#1a1a1a", borderRadius: "8px" }}
                 >
                   <Text size="sm" c="dimmed">
-                    Memory 💾
+                    Memory:
                   </Text>
                   <Text
                     size="lg"
@@ -259,7 +246,7 @@ export default function MatchResultPage() {
       </Flex>
 
       <Group mt="xl" gap="lg">
-        <Button onClick={() => router.push("/queue")}>New Game</Button>
+        <Button onClick={() => router.push("/match")}>New Game</Button>
         <Button
           variant="light"
           color="blue"
@@ -269,8 +256,8 @@ export default function MatchResultPage() {
         >
           View Problem
         </Button>
-        <Button variant="outline" onClick={() => router.push("/dashboard")}>
-          Main Menu
+        <Button variant="outline" onClick={() => router.push("/home")}>
+          Home
         </Button>
       </Group>
 
