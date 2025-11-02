@@ -33,7 +33,7 @@ class ResultsService:
             select(User).where(User.id == match_history.winner_id)
         )
         winner = winner_result.scalar_one_or_none()
-        
+        print(winner.leetcode_username)
         loser_result = await db.execute(
             select(User).where(User.id == match_history.loser_id)
         )
@@ -50,7 +50,7 @@ class ResultsService:
             "match_id": match_history.match_id,
             "winner": {
                 "id": match_history.winner_id,
-                "username": winner.username if winner else f"Player{match_history.winner_id}",
+                "username": winner.leetcode_username if winner else f"Player{match_history.winner_id}",
                 "elo_before": winner_elo_before,
                 "elo_after": match_history.winner_elo,
                 "elo_change": match_history.elo_change,
@@ -59,7 +59,7 @@ class ResultsService:
             },
             "loser": {
                 "id": match_history.loser_id,
-                "username": loser.username if loser else f"Player{match_history.loser_id}",
+                "username": loser.leetcode_username if loser else f"Player{match_history.loser_id}",
                 "elo_before": loser_elo_before,
                 "elo_after": match_history.loser_elo,
                 "elo_change": -abs(match_history.elo_change),
@@ -110,8 +110,8 @@ class ResultsService:
             
             match_list.append({
                 "match_id": match.match_id,
-                "winner_username": winner.username if winner else f"Player{match.winner_id}",
-                "loser_username": loser.username if loser else f"Player{match.loser_id}",
+                "winner_username": winner.leetcode_username if winner else f"Player{match.winner_id}",
+                "loser_username": loser.leetcode_username if loser else f"Player{match.loser_id}",
                 "problem": match.leetcode_problem,
                 "elo_change": match.elo_change,
                 "match_duration": match.match_seconds,
@@ -166,7 +166,7 @@ class ResultsService:
                 "match_id": match.match_id,
                 "won": won,
                 "opponent_id": opponent_id,
-                "opponent_username": opponent.username if opponent else f"Player{opponent_id}",
+                "opponent_username": opponent.leetcode_username if opponent else f"Player{opponent_id}",
                 "elo_change": match.elo_change if won else -match.elo_change,
                 "final_elo": match.winner_elo if won else match.loser_elo,
                 "problem": match.leetcode_problem,
@@ -178,67 +178,3 @@ class ResultsService:
             })
         
         return history
-    
-    @staticmethod
-    def get_mock_match_data(match_id: int) -> Dict[str, Any]:
-        """
-        Provide mock data for testing when database is unavailable.
-        
-        Args:
-            match_id: The match ID for mock data
-            
-        Returns:
-            Mock match data dictionary
-        """
-        return {
-            "match_id": match_id,
-            "winner": {
-                "id": 1,
-                "username": "Player1",
-                "elo_before": 1200,
-                "elo_after": 1215,
-                "elo_change": 15,
-                "runtime": 42,
-                "memory": 14.2
-            },
-            "loser": {
-                "id": 2,
-                "username": "Player2",
-                "elo_before": 1180,
-                "elo_after": 1165,
-                "elo_change": -15,
-                "runtime": 156,
-                "memory": 13.8
-            },
-            "problem": {
-                "slug": "two-sum",
-                "title": "Two Sum",
-                "url": "https://leetcode.com/problems/two-sum/"
-            },
-            "match_duration": 754,
-            "elo_change": 15
-        }
-    
-    @staticmethod
-    def get_mock_recent_matches() -> Dict[str, Any]:
-        """
-        Provide mock recent matches data for testing.
-        
-        Returns:
-            Mock recent matches data
-        """
-        return {
-            "matches": [
-                {
-                    "match_id": 1,
-                    "winner_username": "Player1",
-                    "loser_username": "Player2",
-                    "problem": "two-sum",
-                    "elo_change": 15,
-                    "match_duration": 754,
-                    "winner_runtime": 42,
-                    "loser_runtime": 156
-                }
-            ],
-            "total": 1
-        }
