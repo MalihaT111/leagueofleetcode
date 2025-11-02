@@ -3,7 +3,7 @@ Database models for the application.
 """
 
 from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import Column, Integer, String, Boolean, Text, JSON, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, Text, JSON, Enum, ForeignKey
 from src.database.database import Base
 import enum
 
@@ -69,4 +69,10 @@ class MatchHistory(Base):
     elo_change = Column(Integer, nullable=False)
     winner_elo = Column(Integer, nullable=False)
     loser_elo = Column(Integer, nullable=False)
+    match_seconds = Column(Integer, nullable=False)
+    winner_runtime = Column(Integer, nullable=False)
+    lower_runtime = Column(Integer, nullable=False)
+    winner_memory = Column(Float, nullable=False)
+    loser_memory = Column(Float, nullable=False)
+    
 # backend/src/database/models.py
