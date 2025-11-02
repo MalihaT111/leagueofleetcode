@@ -2,13 +2,14 @@
 
 import { Group, Flex, Text } from "@mantine/core";
 import Link from "next/link";
-import LogoutButton from "./LogoutButton";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useLogout } from "@/hooks/useLogout";
 
 export default function Navbar() {
   const router = useRouter();
   const { currentUserId } = useCurrentUser();
+  const { logout } = useLogout();
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -20,11 +21,17 @@ export default function Navbar() {
     }
   };
 
+  const handleLogoutClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await logout();
+  };
+
   const links = [
     { label: "Leaderboard", href: "/leaderboard" },
     { label: "Match", href: "/match" },
     { label: "Settings", href: "/settings" },
     { label: "Profile", href: "/profile", onClick: handleProfileClick },
+    { label: "Logout", href: "/logout", onClick: handleLogoutClick },
   ];
 
   const linkStyle: React.CSSProperties = {
@@ -76,9 +83,19 @@ export default function Navbar() {
           link.onClick ? (
             <Text
               key={link.href}
-              style={{ ...linkStyle, cursor: "pointer" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+              style={{
+                ...linkStyle,
+                cursor: "pointer",
+                color: link.label === "Logout" ? "#ff6b6b" : "white",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color =
+                  link.label === "Logout" ? "#ff4444" : "#d8a727")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color =
+                  link.label === "Logout" ? "#ff6b6b" : "white")
+              }
               onClick={link.onClick}
             >
               {link.label.toUpperCase()}
@@ -95,7 +112,6 @@ export default function Navbar() {
             </Link>
           )
         )}
-        <LogoutButton />
       </Group>
     </Flex>
   );
