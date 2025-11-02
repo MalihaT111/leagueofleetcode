@@ -340,23 +340,6 @@ export default function SignUpPage() {
               </Link>
             </Text>
           </Box>
-
-          {/* Back to Home */}
-          <Box ta="center">
-            <Link
-              href="/"
-              style={{
-                color: "#666",
-                textDecoration: "none",
-                fontSize: "14px",
-                transition: "color 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
-            >
-              ← Back to Home
-            </Link>
-          </Box>
         </Stack>
       </Card>
     </Flex>

@@ -17,7 +17,7 @@ export default function Navbar() {
       router.push(`/profile/${currentUserId}`);
     } else {
       // Fallback or redirect to login if no user ID
-      router.push("/login");
+      router.push("/signin");
     }
   };
 
