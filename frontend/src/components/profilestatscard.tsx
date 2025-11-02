@@ -5,8 +5,12 @@ import ProfileHeader from "@/components/profilehead";
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Group justify="space-between" w="100%">
-      <Text fw={600} c="black">{label}</Text>
-      <Text fw={600} c="black">{value}</Text>
+      <Text fw={600} c="black">
+        {label}
+      </Text>
+      <Text fw={600} c="black">
+        {value}
+      </Text>
     </Group>
   );
 }

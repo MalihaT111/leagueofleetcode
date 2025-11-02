@@ -10,9 +10,9 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-export default function ProtectedRoute({ 
-  children, 
-  redirectTo = "/signin" 
+export default function ProtectedRoute({
+  children,
+  redirectTo = "/signin",
 }: ProtectedRouteProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -43,13 +43,7 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <Flex
-        h="100vh"
-        w="100%"
-        justify="center"
-        align="center"
-        bg="#1a1a1a"
-      >
+      <Flex h="100vh" w="100%" justify="center" align="center" bg="#1a1a1a">
         <Loader color="#FFBD42" size="lg" />
       </Flex>
     );

@@ -13,7 +13,7 @@ export default function RootPage() {
       try {
         // Check if user has a token
         const token = AuthService.getToken();
-        
+
         if (!token) {
           // No token, redirect to sign in
           router.push("/signin");
@@ -45,34 +45,44 @@ export default function RootPage() {
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        backgroundColor: "#1a1a1a",
-        color: "white"
-      }}>
-        <div style={{
+      <div
+        style={{
           display: "flex",
-          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          gap: "16px"
-        }}>
-          <div style={{
-            width: "40px",
-            height: "40px",
-            border: "4px solid #333",
-            borderTop: "4px solid #FFBD42",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite"
-          }}></div>
+          height: "100vh",
+          backgroundColor: "#1a1a1a",
+          color: "white",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "4px solid #333",
+              borderTop: "4px solid #FFBD42",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          ></div>
           <p>Loading...</p>
         </div>
         <style jsx>{`
           @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+              transform: rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg);
+            }
           }
         `}</style>
       </div>

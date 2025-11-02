@@ -72,9 +72,8 @@ export function useSettings(userId: number = 1) {
 
   const isDifficultyOn = (level: number) =>
     !!settings?.difficulty?.includes(level);
-  
-  const isTopicOn = (topicId: number) =>
-    !!settings?.topics?.includes(topicId);
+
+  const isTopicOn = (topicId: number) => !!settings?.topics?.includes(topicId);
 
   return {
     settings,
@@ -85,6 +84,6 @@ export function useSettings(userId: number = 1) {
     toggleTopic,
     isDifficultyOn,
     isTopicOn,
-    updateSettings
+    updateSettings,
   };
 }

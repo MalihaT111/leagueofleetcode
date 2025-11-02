@@ -4,7 +4,11 @@ import { useEffect, useState, useRef } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox";
 import { orbitron } from "../fonts";
-import { useLeaveQueue, useMatchStatus, useJoinQueue } from "@/lib/api/queries/matchmaking";
+import {
+  useLeaveQueue,
+  useMatchStatus,
+  useJoinQueue,
+} from "@/lib/api/queries/matchmaking";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/utils/auth";
 
@@ -26,29 +30,32 @@ export default function MatchmakingPage() {
   const [inQueue, setInQueue] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
   const hasJoinedQueueRef = useRef(false);
-  
+
   const leaveQueueMutation = useLeaveQueue();
   const joinQueueMutation = useJoinQueue();
   const router = useRouter();
-  
+
   // Poll for match status when user is in queue
-  const { data: matchStatus } = useMatchStatus(userId || 0, inQueue && userId !== null);
+  const { data: matchStatus } = useMatchStatus(
+    userId || 0,
+    inQueue && userId !== null,
+  );
 
   // Get current user and join queue on component mount
   useEffect(() => {
     if (hasJoinedQueueRef.current) return; // Prevent running multiple times
     hasJoinedQueueRef.current = true;
-    
+
     const getCurrentUserAndJoinQueue = async () => {
       try {
         const user = await AuthService.getCurrentUser();
         setUserId(user.id);
-        
+
         // Join queue immediately when page loads
         const result = await joinQueueMutation.mutateAsync(user.id);
-        
+
         console.log("Join queue result:", result);
-        
+
         if (result.status === "matched" && result.match) {
           // Immediate match found
           console.log("Immediate match found!", result.match);
@@ -68,7 +75,10 @@ export default function MatchmakingPage() {
         }
       } catch (error) {
         console.error("Failed to get current user or join queue:", error);
-        console.error("Error details:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "Error details:",
+          error instanceof Error ? error.message : String(error),
+        );
         // Don't redirect to signin immediately, let user see the error
         // router.push("/signin");
       }
@@ -99,7 +109,7 @@ export default function MatchmakingPage() {
   // Handle leaving queue
   const handleLeaveQueue = async () => {
     if (!userId) return;
-    
+
     try {
       await leaveQueueMutation.mutateAsync(userId);
       setInQueue(false);
@@ -114,8 +124,6 @@ export default function MatchmakingPage() {
   const secs = seconds % 60;
   const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
-
-
   return (
     <Flex
       h="100vh"
@@ -127,7 +135,7 @@ export default function MatchmakingPage() {
       c="white"
       gap="xl"
     >
-    <Navbar/>
+      <Navbar />
       <Title
         style={{
           fontSize: "70px",
@@ -171,16 +179,16 @@ export default function MatchmakingPage() {
             }}
           />
           <Text
-              size="sm"
-              className={orbitron.className}
-              style={{
-                fontSize: "28px",
-                fontWeight: 700,
-                letterSpacing: "2px",
-              }}
-            >
-              {formatted}
-        </Text>
+            size="sm"
+            className={orbitron.className}
+            style={{
+              fontSize: "28px",
+              fontWeight: 700,
+              letterSpacing: "2px",
+            }}
+          >
+            {formatted}
+          </Text>
         </Stack>
 
         <Stack align="center" gap="xs">

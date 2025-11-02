@@ -19,8 +19,7 @@ export default function FilterTypesCard() {
   const { settings, loading, error, toggleTopic, isTopicOn, updateSettings } =
     useSettings();
 
-  if (loading || !settings)
-    return <Text c="gray.4">Loading settings...</Text>;
+  if (loading || !settings) return <Text c="gray.4">Loading settings...</Text>;
 
   if (error)
     return (
@@ -31,28 +30,82 @@ export default function FilterTypesCard() {
 
   // 🧠 Available filters
   const filters = [
-    "Array", "String", "Hash Table", "Dynamic Programming", "Math",
-    "Sorting", "Greedy", "Depth-First Search", "Binary Search", "Database",
-    "Matrix", "Bit Manipulation", "Tree", "Breadth-First Search",
-    "Two Pointers", "Prefix Sum", "Heap (Priority Queue)", "Simulation",
-    "Binary Tree", "Graph", "Counting", "Stack", "Sliding Window", "Design",
-    "Enumeration", "Backtracking", "Union Find", "Number Theory",
-    "Linked List", "Ordered Set", "Monotonic Stack", "Segment Tree", "Trie",
-    "Combinatorics", "Bitmask", "Divide and Conquer", "Queue", "Recursion",
-    "Geometry", "Binary Indexed Tree", "Memoization", "Hash Function",
-    "Binary Search Tree", "Shortest Path", "String Matching",
-    "Topological Sort", "Rolling Hash", "Game Theory", "Interactive",
-    "Data Stream", "Monotonic Queue", "Brainteaser", "Doubly-Linked List",
-    "Randomized", "Merge Sort", "Counting Sort", "Iterator", "Concurrency",
-    "Line Sweep", "Probability and Statistics", "Quickselect", "Suffix Array",
-    "Minimum Spanning Tree", "Bucket Sort", "Shell", "Reservoir Sampling",
-    "Strongly Connected Component", "Eulerian Circuit", "Radix Sort",
-    "Rejection Sampling", "Biconnected Component",
+    "Array",
+    "String",
+    "Hash Table",
+    "Dynamic Programming",
+    "Math",
+    "Sorting",
+    "Greedy",
+    "Depth-First Search",
+    "Binary Search",
+    "Database",
+    "Matrix",
+    "Bit Manipulation",
+    "Tree",
+    "Breadth-First Search",
+    "Two Pointers",
+    "Prefix Sum",
+    "Heap (Priority Queue)",
+    "Simulation",
+    "Binary Tree",
+    "Graph",
+    "Counting",
+    "Stack",
+    "Sliding Window",
+    "Design",
+    "Enumeration",
+    "Backtracking",
+    "Union Find",
+    "Number Theory",
+    "Linked List",
+    "Ordered Set",
+    "Monotonic Stack",
+    "Segment Tree",
+    "Trie",
+    "Combinatorics",
+    "Bitmask",
+    "Divide and Conquer",
+    "Queue",
+    "Recursion",
+    "Geometry",
+    "Binary Indexed Tree",
+    "Memoization",
+    "Hash Function",
+    "Binary Search Tree",
+    "Shortest Path",
+    "String Matching",
+    "Topological Sort",
+    "Rolling Hash",
+    "Game Theory",
+    "Interactive",
+    "Data Stream",
+    "Monotonic Queue",
+    "Brainteaser",
+    "Doubly-Linked List",
+    "Randomized",
+    "Merge Sort",
+    "Counting Sort",
+    "Iterator",
+    "Concurrency",
+    "Line Sweep",
+    "Probability and Statistics",
+    "Quickselect",
+    "Suffix Array",
+    "Minimum Spanning Tree",
+    "Bucket Sort",
+    "Shell",
+    "Reservoir Sampling",
+    "Strongly Connected Component",
+    "Eulerian Circuit",
+    "Radix Sort",
+    "Rejection Sampling",
+    "Biconnected Component",
   ];
 
   // 🔎 Filtered list based on search term
   const filtered = filters.filter((f) =>
-    f.toLowerCase().includes(search.toLowerCase())
+    f.toLowerCase().includes(search.toLowerCase()),
   );
 
   // ✅ “Select All” → sets all topics active
@@ -168,9 +221,7 @@ export default function FilterTypesCard() {
                 onClick={() => toggleTopic?.(idx)}
                 styles={{
                   root: {
-                    backgroundColor: isTopicOn?.(idx)
-                      ? "#6b7280"
-                      : "#2a2a2a",
+                    backgroundColor: isTopicOn?.(idx) ? "#6b7280" : "#2a2a2a",
                     color: "white",
                     fontWeight: 600,
                     textAlign: "center",

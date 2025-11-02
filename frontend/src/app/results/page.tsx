@@ -1,6 +1,15 @@
 "use client";
 
-import { Flex, Stack, Title, Text, Paper, Divider, Button, Group } from "@mantine/core";
+import {
+  Flex,
+  Stack,
+  Title,
+  Text,
+  Paper,
+  Divider,
+  Button,
+  Group,
+} from "@mantine/core";
 import { montserrat } from "../fonts";
 import { PlayerResult } from "@/components/playerresult";
 import { useState } from "react";
@@ -83,7 +92,8 @@ export default function ResultsPage() {
               <b>Time score:</b> <span style={{ color: "#ffd166" }}>300</span>
             </Text>
             <Text size="md">
-              <b>Quality score:</b> <span style={{ color: "#06d6a0" }}>256</span>
+              <b>Quality score:</b>{" "}
+              <span style={{ color: "#06d6a0" }}>256</span>
             </Text>
             <Text size="md">
               <b>ELO:</b>{" "}
@@ -97,13 +107,28 @@ export default function ResultsPage() {
 
       {/* Buttons */}
       <Group mt="xl" gap="lg">
-        <Button size="md" variant="light" color="gray" style={{ fontWeight: "bold", minWidth: "140px" }}>
+        <Button
+          size="md"
+          variant="light"
+          color="gray"
+          style={{ fontWeight: "bold", minWidth: "140px" }}
+        >
           Rematch
         </Button>
-        <Button size="md" variant="light" color="blue" style={{ fontWeight: "bold", minWidth: "140px" }}>
+        <Button
+          size="md"
+          variant="light"
+          color="blue"
+          style={{ fontWeight: "bold", minWidth: "140px" }}
+        >
           New Game
         </Button>
-        <Button size="md" variant="outline" color="gray" style={{ fontWeight: "bold", minWidth: "140px" }}>
+        <Button
+          size="md"
+          variant="outline"
+          color="gray"
+          style={{ fontWeight: "bold", minWidth: "140px" }}
+        >
           Main Menu
         </Button>
       </Group>
