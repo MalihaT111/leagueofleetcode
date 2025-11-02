@@ -75,7 +75,7 @@ export default function MatchmakingPage() {
     };
 
     getCurrentUserAndJoinQueue();
-  }, [router]); // Remove joinQueueMutation from dependencies to prevent re-runs
+  }, []); // Empty dependency array - only run once on mount
 
   // Timer effect
   useEffect(() => {

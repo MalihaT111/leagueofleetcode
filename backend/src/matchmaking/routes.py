@@ -48,29 +48,20 @@ async def get_match_status(user_id: int, db: AsyncSession = Depends(get_db)):
         return QueueResponse(status="waiting", match=None)
     
     # User is not in queue, check if they have a recent match with "TBD" problem
-    # Only look for very recent matches (last 3 match IDs to avoid old stale records)
-    latest_match_result = await db.execute(
-        select(MatchHistory.match_id).order_by(MatchHistory.match_id.desc()).limit(1)
-    )
-    latest_match_id = latest_match_result.scalar_one_or_none()
-    
-    if latest_match_id:
-        recent_match = await db.execute(
-            select(MatchHistory)
-            .where(
-                or_(
-                    MatchHistory.winner_id == user_id,
-                    MatchHistory.loser_id == user_id
-                )
+    # Look for any recent match with TBD status (active match)
+    recent_match_result = await db.execute(
+        select(MatchHistory)
+        .where(
+            or_(
+                MatchHistory.winner_id == user_id,
+                MatchHistory.loser_id == user_id
             )
-            .where(MatchHistory.leetcode_problem == "TBD")  # Active match indicator
-            .where(MatchHistory.match_id >= latest_match_id - 2)  # Only very recent matches (last 3)
-            .order_by(MatchHistory.match_id.desc())
-            .limit(1)
         )
-    else:
-        recent_match = None
-    match = recent_match.scalar_one_or_none() if recent_match else None
+        .where(MatchHistory.leetcode_problem == "TBD")  # Active match indicator
+        .order_by(MatchHistory.match_id.desc())
+        .limit(1)
+    )
+    match = recent_match_result.scalar_one_or_none()
     
     if match:
         # Determine opponent
