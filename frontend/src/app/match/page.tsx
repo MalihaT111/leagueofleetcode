@@ -1,6 +1,6 @@
 "use client";
 import Navbar from "@/components/navbar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Flex, Stack, Title, Text, Button } from "@mantine/core";
 import { ProfileBox } from "@/components/profilebox";
 import { orbitron } from "../fonts";
@@ -24,8 +24,8 @@ export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
   const [userId, setUserId] = useState<number | null>(null);
   const [inQueue, setInQueue] = useState(false);
-  const [hasJoinedQueue, setHasJoinedQueue] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
+  const hasJoinedQueueRef = useRef(false);
   
   const leaveQueueMutation = useLeaveQueue();
   const joinQueueMutation = useJoinQueue();
@@ -36,13 +36,13 @@ export default function MatchmakingPage() {
 
   // Get current user and join queue on component mount
   useEffect(() => {
-    if (hasJoinedQueue) return; // Prevent running multiple times
+    if (hasJoinedQueueRef.current) return; // Prevent running multiple times
+    hasJoinedQueueRef.current = true;
     
     const getCurrentUserAndJoinQueue = async () => {
       try {
         const user = await AuthService.getCurrentUser();
         setUserId(user.id);
-        setHasJoinedQueue(true); // Mark that we've attempted to join
         
         // Join queue immediately when page loads
         const result = await joinQueueMutation.mutateAsync(user.id);
