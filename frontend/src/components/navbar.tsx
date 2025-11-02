@@ -4,36 +4,11 @@ import { Group, Flex, Text } from "@mantine/core";
 import Link from "next/link";
 import LogoutButton from "./LogoutButton";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function Navbar() {
   const router = useRouter();
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-
-  // Fetch current user ID on component mount
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const token = localStorage.getItem('access_token'); // Adjust based on how you store the token
-        if (!token) return;
-
-        const response = await fetch('http://127.0.0.1:8000/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setCurrentUserId(userData.id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch current user:', error);
-      }
-    };
-
-    fetchCurrentUser();
-  }, []);
+  const { currentUserId } = useCurrentUser();
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +16,7 @@ export default function Navbar() {
       router.push(`/profile/${currentUserId}`);
     } else {
       // Fallback or redirect to login if no user ID
-      router.push('/login');
+      router.push("/login");
     }
   };
 
@@ -97,11 +72,11 @@ export default function Navbar() {
 
       {/* Links (Leaderboard, Match, Settings) and Logout */}
       <Group>
-        {links.map((link) => (
+        {links.map((link) =>
           link.onClick ? (
             <Text
               key={link.href}
-              style={{...linkStyle, cursor: "pointer"}}
+              style={{ ...linkStyle, cursor: "pointer" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
               onClick={link.onClick}
@@ -119,7 +94,7 @@ export default function Navbar() {
               {link.label.toUpperCase()}
             </Link>
           )
-        ))}
+        )}
         <LogoutButton />
       </Group>
     </Flex>
