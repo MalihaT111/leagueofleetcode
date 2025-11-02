@@ -3,13 +3,28 @@
 import { Group, Flex, Text } from "@mantine/core";
 import Link from "next/link";
 import LogoutButton from "./LogoutButton";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function Navbar() {
+  const router = useRouter();
+  const { currentUserId } = useCurrentUser();
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (currentUserId) {
+      router.push(`/profile/${currentUserId}`);
+    } else {
+      // Fallback or redirect to login if no user ID
+      router.push("/login");
+    }
+  };
+
   const links = [
     { label: "Leaderboard", href: "/leaderboard" },
     { label: "Match", href: "/match" },
     { label: "Settings", href: "/settings" },
-    { label: "Profile", href: "/profile" },
+    { label: "Profile", href: "/profile", onClick: handleProfileClick },
   ];
 
   const linkStyle: React.CSSProperties = {
@@ -57,17 +72,29 @@ export default function Navbar() {
 
       {/* Links (Leaderboard, Match, Settings) and Logout */}
       <Group>
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            style={linkStyle}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-          >
-            {link.label.toUpperCase()}
-          </Link>
-        ))}
+        {links.map((link) =>
+          link.onClick ? (
+            <Text
+              key={link.href}
+              style={{ ...linkStyle, cursor: "pointer" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+              onClick={link.onClick}
+            >
+              {link.label.toUpperCase()}
+            </Text>
+          ) : (
+            <Link
+              key={link.href}
+              href={link.href}
+              style={linkStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+            >
+              {link.label.toUpperCase()}
+            </Link>
+          )
+        )}
         <LogoutButton />
       </Group>
     </Flex>
