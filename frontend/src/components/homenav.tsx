@@ -2,8 +2,22 @@
 
 import { Group, Text } from "@mantine/core";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function HomeNavbar() {
+  const router = useRouter();
+  const { currentUserId } = useCurrentUser();
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (currentUserId) {
+      router.push(`/profile/${currentUserId}`);
+    } else {
+      router.push("/login");
+    }
+  };
+
   const linkStyle: React.CSSProperties = {
     color: "white",
     fontWeight: 600,
@@ -34,16 +48,17 @@ export default function HomeNavbar() {
         </Text>
       </Link>
 
-      <Link
-        href="/profile"
-        style={linkStyle}
+      <Text
+        fw={600}
+        fz="md"
+        c="inherit"
+        style={{ ...linkStyle, cursor: "pointer" }}
         onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
         onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+        onClick={handleProfileClick}
       >
-        <Text fw={600} fz="md" c="inherit">
-          PROFILE
-        </Text>
-      </Link>
+        PROFILE
+      </Text>
     </Group>
   );
 }
