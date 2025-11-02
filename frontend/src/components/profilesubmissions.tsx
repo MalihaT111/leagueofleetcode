@@ -21,10 +21,14 @@ export default function RecentSubmissionsTable({ matches }: { matches: RecentMat
             </Text>
           </td>
           <td>
-            <Text fw={600} fz="sm" c={match.rating_change >= 0 ? "green" : "red"}>
-              {match.rating_change >= 0
+            <Text
+              fw={600}
+              fz="sm"
+              c={match.outcome === "win" ? "green" : "red"}
+            >
+              {match.outcome ==="win"
                 ? `+${match.rating_change}`
-                : match.rating_change}
+                : `-${match.rating_change}`}
             </Text>
           </td>
           <td>
