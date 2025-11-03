@@ -7,6 +7,8 @@ from ..database.models import User
 async def create_match_record(db: AsyncSession, user: User, opponent: User):
     from sqlalchemy import or_, delete
     
+    problem =  await LeetCodeService.get_random_problem()
+    
     # Clean up any existing TBD records for both users
     await db.execute(
         delete(MatchHistory).where(
@@ -34,4 +36,5 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
     db.add(match)
     await db.commit()
     await db.refresh(match)
-    return match
+    return {"match": match, 
+            "problem": problem}
