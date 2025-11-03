@@ -7,6 +7,7 @@ from ..database.models import User, MatchHistory
 from ..matchmaking.manager import MatchmakingManager
 from ..matchmaking.manager import MATCHMAKING_KEY
 from ..matchmaking.schemas import QueueResponse, MatchResponse
+from ..leetcode.schemas import Problem
 
 router = APIRouter(tags=["Matchmaking"])
 manager = MatchmakingManager()
@@ -26,7 +27,7 @@ async def join_queue(user_id: int, db: AsyncSession = Depends(get_db)):
             match_id=match["match_id"],
             opponent=match["opponent"],
             opponent_elo=match["opponent_elo"],
-            problem=match["problem"].dict()
+            problem=manager.problem.dict()
         )
         return QueueResponse(status="matched", match=match_response)
     return QueueResponse(status="queued", match=None)
@@ -76,7 +77,8 @@ async def get_match_status(user_id: int, db: AsyncSession = Depends(get_db)):
                 match=MatchResponse(
                     match_id=match.match_id,
                     opponent=opponent.email,
-                    opponent_elo=opponent.user_elo
+                    opponent_elo=opponent.user_elo,
+                    problem=manager.problem.dict() if manager.problem else Problem()
                 )
             )
     
