@@ -13,10 +13,21 @@ import { useRouter } from "next/navigation";
 import { AuthService } from "@/utils/auth";
 
 // Type definitions for match data
+
+interface Problem {
+    id: number,
+    title: string,
+    slug: string,
+    difficulty: string,
+    tags: string[],
+    acceptance_rate: string
+}
+
 interface MatchData {
   match_id: number;
   opponent: string;
   opponent_elo: number;
+  problem: Problem
 }
 
 interface QueueResponse {
@@ -29,6 +40,7 @@ export default function MatchmakingPage() {
   const [userId, setUserId] = useState<number | null>(null);
   const [inQueue, setInQueue] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
+  const [queueData, setQueueData] = useState<QueueResponse | null>();
   const hasJoinedQueueRef = useRef(false);
 
   const leaveQueueMutation = useLeaveQueue();
@@ -59,9 +71,11 @@ export default function MatchmakingPage() {
         if (result.status === "matched" && result.match) {
           // Immediate match found
           console.log("Immediate match found!", result.match);
-          console.log("Navigating to /matchfound...");
           setMatchFound(true);
-          router.push("/matchfound");
+          setQueueData(result);
+          
+          console.log(queueData);
+
         } else if (result.status === "queued") {
           // Start polling for matches after a short delay
           console.log("Added to queue, starting polling...");
@@ -102,7 +116,9 @@ export default function MatchmakingPage() {
       console.log("Match found via polling!", matchStatus.match);
       setInQueue(false);
       setMatchFound(true);
-      router.push("/matchfound");
+      setQueueData(matchStatus);
+      console.log(queueData?.match?.problem);
+      
     }
   }, [matchStatus, router, matchFound]);
 

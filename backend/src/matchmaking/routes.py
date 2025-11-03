@@ -25,7 +25,8 @@ async def join_queue(user_id: int, db: AsyncSession = Depends(get_db)):
         match_response = MatchResponse(
             match_id=match["match_id"],
             opponent=match["opponent"],
-            opponent_elo=match["opponent_elo"]
+            opponent_elo=match["opponent_elo"],
+            problem=match["problem"].dict()
         )
         return QueueResponse(status="matched", match=match_response)
     return QueueResponse(status="queued", match=None)

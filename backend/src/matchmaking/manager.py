@@ -50,11 +50,15 @@ class MatchmakingManager:
                 continue
 
             # Create match record
-            match = await create_match_record(db, user, opp)
+            match_record = await create_match_record(db, user, opp)
+            match = match_record["match"]
+            problem = match_record["problem"]
+            
             return {
                 "match_id": match.match_id,
                 "opponent": opp.email,  # Using email which maps to username
-                "opponent_elo": opp.user_elo
+                "opponent_elo": opp.user_elo,
+                "problem": problem
             }
 
         return None

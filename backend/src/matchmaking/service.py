@@ -2,12 +2,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.models import MatchHistory
 from ..database.models import User
+from ..leetcode.service.leetcode_service import LeetCodeService
 
 
 async def create_match_record(db: AsyncSession, user: User, opponent: User):
     from sqlalchemy import or_, delete
     
-    problem =  await LeetCodeService.get_random_problem()
+    problem = await LeetCodeService.get_random_problem()
     
     # Clean up any existing TBD records for both users
     await db.execute(
