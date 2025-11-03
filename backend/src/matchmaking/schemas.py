@@ -7,7 +7,6 @@ class MatchResponse(BaseModel):
     opponent: str
     opponent_elo: int
     problem: dict
-    problem: dict
 
 class QueueResponse(BaseModel):
     status: str
