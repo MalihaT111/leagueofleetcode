@@ -7,23 +7,10 @@ from src.leetcode.enums.difficulty import DifficultyEnum
 from src.leetcode.service.graphql_queries import *
 
 class LeetCodeService:
-    BASE_URL = "https://leetcode.com/graphql"
-    
     @staticmethod
-    async def get_problems(
-        difficulty: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        limit: int = 50
-    ) -> List[Problem]:
-        filters = {}
-        if difficulty:
-            filters["difficulty"] = difficulty.upper()
-        if tags:
-            filters["tags"] = tags
-
-        variables = {"limit": limit, "filters": filters}
-        data = await LeetCodeGraphQLClient.query(GET_PROBLEMS, variables)
-        return data["problemsetQuestionList"]["questions"]
+    async def get_problem(slug: str) -> Problem:
+        data = await LeetCodeGraphQLClient.query(PROBLEM_QUERY, {"titleSlug": slug})
+        return data
     
     @staticmethod
     async def get_user_submissions(username: str):
@@ -67,8 +54,8 @@ class LeetCodeService:
         pass
     
     @staticmethod
-    async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
-        response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
+    async def get_random_problem() -> Problem:
+        response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY)
         
         randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
         print(randomSlug)

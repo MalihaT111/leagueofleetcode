@@ -11,7 +11,7 @@ from src.auth.auth import auth_router, register_router, current_user
 from src.database.models import User
 from src.profile.routes import router as profile_router
 from src.settings.routes import router as settings_router
-# from src.leetcode.routes import router as leetcode_router  # Uncomment if you actually have it
+from src.leetcode.routes import router as leetcode_router
 
 # --- Lifespan event (startup/shutdown) ---
 @asynccontextmanager
@@ -43,7 +43,7 @@ app.include_router(register_router, prefix="/auth", tags=["auth"])
 app.include_router(matchhistory_router, prefix="/api", tags=["history"])
 app.include_router(profile_router)
 app.include_router(settings_router, prefix="/api", tags=["settings"])
-# app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])  # Uncomment only if exists
+app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])
 
 # --- Root Health Check ---
 @app.get("/")
