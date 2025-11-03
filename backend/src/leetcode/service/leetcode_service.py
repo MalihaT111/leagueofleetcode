@@ -5,6 +5,7 @@ from src.leetcode.service.client import LeetCodeGraphQLClient
 from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResult
 from src.leetcode.enums.difficulty import DifficultyEnum
 from src.leetcode.service.graphql_queries import *
+import json
 
 class LeetCodeService:
     @staticmethod
@@ -55,11 +56,43 @@ class LeetCodeService:
     
     @staticmethod
     async def get_random_problem() -> Problem:
-        response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY)
+        try:
+            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY)
+            random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
+
+            if not random_slug:
+                raise ValueError("LeetCode API returned no titleSlug")
+
+            print(f"Selected random problem: {random_slug}")
+            problem_data = await LeetCodeService.get_problem(random_slug)
+        except Exception as e:
+            print(f"Failed to fetch random problem: {e}")
+            return {"error": str(e)}
         
-        randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
-        print(randomSlug)
+        problem = problem_data["data"]["question"]
         
-        problem_response = await LeetCodeService.get_problem(randomSlug)
+        stats_data = json.loads(problem["stats"])
+
+        acceptance_rate = stats_data["acRate"]
         
-        return problem_response
+        # return problem
+        return Problem(
+            id = problem["questionId"],
+            title = problem["title"],
+            slug = problem["titleSlug"],
+            difficulty = problem["difficulty"],
+            tags= [tag["name"] for tag in problem["topicTags"]],
+            acceptance_rate = acceptance_rate
+        )
+    
+"""
+class Problem(BaseModel):
+    id: int
+    title: str
+    slug: str
+    difficulty: str
+    tags: List[str]
+    acceptance_rate: float
+    is_premium: bool
+    content: Optional[str] = None
+"""
