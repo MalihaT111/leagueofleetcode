@@ -160,9 +160,10 @@ class WebSocketManager:
             print(f"❌ Error creating match: {e}")
 
     async def submit_solution(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
-        """Handle solution submission"""
+        """Handle solution submission with LeetCode validation"""
         from sqlalchemy import select
         from ..database.models import MatchHistory
+        from ..leetcode.service.leetcode_service import LeetCodeService
 
         # Find the match
         match_result = await db.execute(
@@ -173,7 +174,57 @@ class WebSocketManager:
         if not match or match.elo_change != 0:
             return False
 
-        # Determine winner and loser
+        # Get the user who submitted
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        
+        if not user or not user.leetcode_username:
+            await self.send_to_user(user_id, {
+                "type": "error",
+                "message": "LeetCode username not found. Please update your profile."
+            })
+            return False
+
+        # Get the problem for this match
+        problem = self.match_problems.get(match_id)
+        if not problem:
+            await self.send_to_user(user_id, {
+                "type": "error", 
+                "message": "Match problem not found"
+            })
+            return False
+
+        try:
+            # Check user's recent submissions
+            print(f"🔍 Checking submissions for {user.leetcode_username} on problem {problem.slug}")
+            recent_submission = await LeetCodeService.get_recent_user_submission(user.leetcode_username)
+            
+            if not recent_submission:
+                await self.send_to_user(user_id, {
+                    "type": "submission_invalid",
+                    "message": "No recent submissions found. Please submit your solution on LeetCode first."
+                })
+                return False
+            
+            # Check if the submission is for the correct problem
+            if recent_submission.titleSlug != problem.slug:
+                await self.send_to_user(user_id, {
+                    "type": "submission_invalid", 
+                    "message": f"Your recent submission is for '{recent_submission.titleSlug}', but the match problem is '{problem.slug}'. Please submit the correct problem."
+                })
+                return False
+            
+            print(f"✅ Valid submission found for {user.leetcode_username}: {recent_submission.titleSlug}")
+            
+        except Exception as e:
+            print(f"❌ Error validating submission: {e}")
+            await self.send_to_user(user_id, {
+                "type": "error",
+                "message": "Failed to validate submission. Please try again."
+            })
+            return False
+
+        # Determine winner and loser (submitting user wins)
         if match.winner_id == user_id:
             winner_id = match.winner_id
             loser_id = match.loser_id

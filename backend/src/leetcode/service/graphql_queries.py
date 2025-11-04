@@ -48,7 +48,6 @@ RECENT_AC_SUBMISSIONS_QUERY = """
           title
           titleSlug
           timestamp
-          statusDisplay
           lang
           runtime
           memory

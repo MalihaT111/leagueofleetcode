@@ -35,3 +35,12 @@ export async function submitSolution(matchId, userId) {
   if (!response.ok) throw new Error("Failed to submit solution");
   return await response.json();
 }
+
+export async function getRecentUserSubmission(username) {
+  const response = await fetch(`${BASE_URL}/leetcode/user/${username}/recent-submission`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Failed to get recent submission");
+  return await response.json();
+}

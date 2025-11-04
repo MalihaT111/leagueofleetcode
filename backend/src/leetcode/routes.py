@@ -19,4 +19,14 @@ async def get_user_leetcode_stats(username: str):
 @router.post("/random-question")
 async def get_random_question():
     return await LeetCodeService.get_random_problem()
+
+@router.get("/user/{username}/submissions", response_model=List[UserSubmission])
+async def get_user_submissions(username: str):
+    """Get user's LeetCode submissions"""
+    return await LeetCodeService.get_user_submissions(username)
+
+@router.get("/user/{username}/recent-submission", response_model=UserSubmission)
+async def get_recent_user_submission(username: str):
+    """Get user's most recent LeetCode submission"""
+    return await LeetCodeService.get_recent_user_submission(username)
     

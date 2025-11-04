@@ -152,6 +152,7 @@ export default function MatchmakingPage() {
         countdown={countdown}
         matchSeconds={matchSeconds}
         formattedTime={formattedTime}
+        error={error}
       />
     );
   }

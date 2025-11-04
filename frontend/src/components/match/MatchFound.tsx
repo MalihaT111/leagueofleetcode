@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Flex, Stack, Title, Text, Button, Loader, Anchor } from "@mantine/core";
+import { Flex, Title, Text, Button, Anchor } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import Navbar from "../navbar";
 import { ProfileBox } from "../profilebox";
@@ -39,12 +39,33 @@ export default function MatchFound({
   const [matchCompleted, setMatchCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResigning, setIsResigning] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [isOnCooldown, setIsOnCooldown] = useState(false);
   
   const router = useRouter();
   const submitSolutionMutation = useSubmitSolution();
   
   // Poll for match completion (fallback only)
   const { data: matchStatus } = useMatchStatus(user.id, timerPhase === 'active' && !matchCompleted);
+  
+  // Cooldown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isOnCooldown && cooldownSeconds > 0) {
+      interval = setInterval(() => {
+        setCooldownSeconds((prev) => {
+          if (prev <= 1) {
+            setIsOnCooldown(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isOnCooldown, cooldownSeconds]);
   
   // Server handles all timing - no local timer needed
 
@@ -60,30 +81,80 @@ export default function MatchFound({
     }
   }, [matchStatus, matchCompleted, router, match.match_id]);
 
+  // Reset loading states when there's an error (invalid submission)
+  useEffect(() => {
+    // Reset button loading states when submission fails
+    if (submitSolutionMutation.isError && (isSubmitting || isResigning)) {
+      setIsSubmitting(false);
+      setIsResigning(false);
+    }
+  }, [submitSolutionMutation.isError, isSubmitting, isResigning]);
+
   // Handle submit solution
   const handleSubmit = async () => {
+    if (isOnCooldown) return;
+    
     setIsSubmitting(true);
     
-    if (onSubmit) {
-      // Use WebSocket submission - don't change any state, just show loading
-      onSubmit();
-      // Don't set matchCompleted - let WebSocket handle redirect
-    } else {
-      // Fallback to REST API
-      try {
-        await submitSolutionMutation.mutateAsync({
-          matchId: match.match_id,
-          userId: user.id
-        });
-        
-        // Redirect to existing results page after short delay
-        setTimeout(() => {
-          router.push(`/match-result/${match.match_id}`);
-        }, 2000);
-      } catch (error) {
-        console.error("Failed to submit solution:", error);
-        setIsSubmitting(false); // Reset loading on error
+    try {
+      // Check if user has a valid recent submission
+      if (!user.leetcode_username) {
+        console.error("User has no LeetCode username");
+        setIsSubmitting(false);
+        return;
       }
+
+      // Fetch user's most recent submission
+      console.log(user.leetcode_username);
+      const response = await fetch(`http://127.0.0.1:8000/api/leetcode/user/${user.leetcode_username}/recent-submission`);
+      if (!response.ok) {
+        throw new Error("Failed to get recent submission");
+      }
+      
+      const recentSubmission = await response.json();
+      
+      // Check if user has any recent submissions
+      if (!recentSubmission || !recentSubmission.titleSlug) {
+        console.log("No recent submissions found");
+        setIsSubmitting(false);
+        setIsOnCooldown(true);
+        setCooldownSeconds(10);
+        return;
+      }
+      
+      // Check if the submission matches the current problem
+      if (recentSubmission.titleSlug === match.problem.titleSlug) {
+        // Valid submission - user wins!
+        if (onSubmit) {
+          // Use WebSocket submission - don't change any state, just show loading
+          onSubmit();
+          // Don't set matchCompleted - let WebSocket handle redirect
+        } else {
+          // Fallback to REST API
+          await submitSolutionMutation.mutateAsync({
+            matchId: match.match_id,
+            userId: user.id
+          });
+          
+          // Redirect to existing results page after short delay
+          setTimeout(() => {
+            router.push(`/match-result/${match.match_id}`);
+          }, 2000);
+        }
+      } else {
+        // Invalid submission - start cooldown
+        console.log(`Submission mismatch: expected ${match.problem.titleSlug}, got ${recentSubmission.titleSlug}`);
+        console.log("Please solve the correct problem before submitting!");
+        setIsSubmitting(false);
+        setIsOnCooldown(true);
+        setCooldownSeconds(10);
+      }
+    } catch (error) {
+      console.error("Failed to validate submission:", error);
+      setIsSubmitting(false);
+      // Start cooldown on error as well
+      setIsOnCooldown(true);
+      setCooldownSeconds(10);
     }
   };
 
@@ -201,14 +272,14 @@ export default function MatchFound({
           color="gray"
           style={{
             fontWeight: "bold",
-            backgroundColor: "#E5E5E5",
+            backgroundColor: isOnCooldown ? "#CCCCCC" : "#E5E5E5",
             color: "black",
           }}
           onClick={handleSubmit}
           loading={isSubmitting || submitSolutionMutation.isPending}
-          disabled={timerPhase !== 'active' || matchCompleted || isSubmitting || isResigning}
+          disabled={timerPhase !== 'active' || matchCompleted || isSubmitting || isResigning || isOnCooldown}
         >
-          Submit
+          {isOnCooldown ? `Submit (${cooldownSeconds}s)` : "Submit"}
         </Button>
         <Button
           size="lg"
@@ -227,6 +298,13 @@ export default function MatchFound({
           Resign
         </Button>
       </Flex>
+
+      {/* Cooldown message */}
+      {isOnCooldown && (
+        <Text size="sm" c="red" mt="sm" ta="center">
+          Please solve the correct problem before submitting!
+        </Text>
+      )}
     </Flex>
   );
 }

@@ -122,6 +122,13 @@ export const useMatchmakingWebSocket = (userId: number | null, onMatchCompleted?
             setError(message.message || 'Unknown error');
             break;
 
+          case 'submission_invalid':
+            // Handle invalid submission - show error but don't end match
+            setError(message.message || 'Invalid submission');
+            // Clear error after 5 seconds
+            setTimeout(() => setError(null), 5000);
+            break;
+
           case 'pong':
             // Heartbeat response
             break;

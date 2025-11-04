@@ -16,7 +16,23 @@ class LeetCodeService:
     @staticmethod
     async def get_user_submissions(username: str):
         data = await LeetCodeGraphQLClient.query(RECENT_AC_SUBMISSIONS_QUERY, {"username": username})
-        return data["recentAcSubmissionList"]
+        return data["data"]["recentAcSubmissionList"]
+    
+    @staticmethod
+    async def get_recent_user_submission(username: str) -> Optional[UserSubmission]:
+        submissions = await LeetCodeService.get_user_submissions(username)
+        if not submissions:
+            return None
+        submission = submissions[0]
+        return UserSubmission(
+            id=submission["id"],
+            title=submission["title"],
+            titleSlug=submission["titleSlug"],
+            timestamp=submission["timestamp"],
+            lang=submission["lang"],
+            runtime=submission["runtime"],
+            memory=submission["memory"]
+        )
     
     @staticmethod
     async def get_user_stats(username: str) -> ProblemStats:
@@ -49,12 +65,6 @@ class LeetCodeService:
         )
     
     @staticmethod
-    async def sync_user_progress(user_id: int, leetcode_username: str) -> SyncResult:
-        """Sync user's LeetCode progress to database"""
-        # TODO: Implement progress synchronization
-        pass
-    
-    @staticmethod
     async def get_random_problem() -> Problem:
         try:
             response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY)
@@ -84,15 +94,3 @@ class LeetCodeService:
             tags= [tag["name"] for tag in problem["topicTags"]],
             acceptance_rate = acceptance_rate
         )
-    
-"""
-class Problem(BaseModel):
-    id: int
-    title: str
-    slug: str
-    difficulty: str
-    tags: List[str]
-    acceptance_rate: float
-    is_premium: bool
-    content: Optional[str] = None
-"""
