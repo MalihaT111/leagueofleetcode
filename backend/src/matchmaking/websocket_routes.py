@@ -24,52 +24,65 @@ async def test_websocket(websocket: WebSocket):
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     """WebSocket endpoint for matchmaking"""
     
-    # Accept connection first
-    await websocket.accept()
-    
-    # Get database session manually (WebSocket dependency injection can be tricky)
-    from ..database.database import AsyncSessionLocal
-    async with AsyncSessionLocal() as db:
-        # Verify user exists
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-        if not user:
-            await websocket.close(code=4004, reason="User not found")
-            return
-
-        # Connect user
+    try:
+        # Accept connection first
+        await websocket.accept()
+        print(f"🔌 WebSocket connection accepted for user {user_id}")
+        
+        # Connect user to manager
         await websocket_manager.connect(websocket, user_id)
         
-        try:
-            while True:
-                # Receive messages from client
-                data = await websocket.receive_text()
-                message = json.loads(data)
+        # Send connection confirmation
+        await websocket_manager.send_to_user(user_id, {
+            "type": "connected",
+            "message": "WebSocket connected successfully"
+        })
+        
+        while True:
+            # Receive messages from client
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            print(f"📨 Received message from user {user_id}: {message}")
+            
+            message_type = message.get("type")
+            
+            if message_type == "join_queue":
+                # Get database session for this operation
+                from ..database.database import AsyncSessionLocal
+                async with AsyncSessionLocal() as db:
+                    # Get user data
+                    result = await db.execute(select(User).where(User.id == user_id))
+                    user = result.scalar_one_or_none()
+                    if user:
+                        await websocket_manager.join_queue(user_id, user.user_elo, db)
+                    else:
+                        await websocket_manager.send_to_user(user_id, {
+                            "type": "error",
+                            "message": "User not found"
+                        })
+                        
+            elif message_type == "leave_queue":
+                await websocket_manager.leave_queue(user_id)
                 
-                message_type = message.get("type")
-                
-                if message_type == "join_queue":
-                    await websocket_manager.join_queue(user_id, user.user_elo, db)
-                    
-                elif message_type == "leave_queue":
-                    await websocket_manager.leave_queue(user_id)
-                    
-                elif message_type == "submit_solution":
-                    match_id = message.get("match_id")
-                    if match_id:
+            elif message_type == "submit_solution":
+                match_id = message.get("match_id")
+                if match_id:
+                    from ..database.database import AsyncSessionLocal
+                    async with AsyncSessionLocal() as db:
                         success = await websocket_manager.submit_solution(match_id, user_id, db)
                         if not success:
                             await websocket_manager.send_to_user(user_id, {
                                 "type": "error",
                                 "message": "Failed to submit solution"
                             })
-                            
-                elif message_type == "ping":
-                    # Heartbeat to keep connection alive
-                    await websocket_manager.send_to_user(user_id, {"type": "pong"})
-                    
-        except WebSocketDisconnect:
-            websocket_manager.disconnect(user_id)
-        except Exception as e:
-            print(f"❌ WebSocket error for user {user_id}: {e}")
-            websocket_manager.disconnect(user_id)
+                        
+            elif message_type == "ping":
+                # Heartbeat to keep connection alive
+                await websocket_manager.send_to_user(user_id, {"type": "pong"})
+                
+    except WebSocketDisconnect:
+        print(f"🔌 WebSocket disconnected for user {user_id}")
+        websocket_manager.disconnect(user_id)
+    except Exception as e:
+        print(f"❌ WebSocket error for user {user_id}: {e}")
+        websocket_manager.disconnect(user_id)
