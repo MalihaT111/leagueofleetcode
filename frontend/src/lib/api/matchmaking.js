@@ -37,7 +37,7 @@ export async function submitSolution(matchId, userId) {
 }
 
 export async function getRecentUserSubmission(username) {
-  const response = await fetch(`${BASE_URL}/leetcode/user/${username}/recent-submission`, {
+  const response = await fetch(`${BASE_URL}/api/leetcode/user/${username}/recent-submission`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });

@@ -136,6 +136,43 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     else:
         raise HTTPException(status_code=400, detail="User not in this match")
     
+    # Get winner's LeetCode username to fetch submission data
+    winner_result = await db.execute(select(User).where(User.id == winner_id))
+    winner = winner_result.scalar_one_or_none()
+    loser_result = await db.execute(select(User).where(User.id == loser_id))
+    loser = loser_result.scalar_one_or_none()
+    
+    if not winner or not loser:
+        raise HTTPException(status_code=404, detail="Player data not found")
+    
+    # Get winner's recent submission for runtime and memory data
+    from ..leetcode.service.leetcode_service import LeetCodeService
+    try:
+        if winner.leetcode_username:
+            recent_submission = await LeetCodeService.get_recent_user_submission(winner.leetcode_username)
+            if recent_submission:
+                # Parse runtime (remove "ms" and convert to int)
+                try:
+                    winner_runtime = int(recent_submission.runtime.replace(" ms", "").replace("ms", "")) if recent_submission.runtime else -1
+                except (ValueError, AttributeError):
+                    winner_runtime = -1
+                
+                # Parse memory (remove "MB" and convert to float)
+                try:
+                    winner_memory = float(recent_submission.memory.replace(" MB", "").replace("MB", "")) if recent_submission.memory else -1.0
+                except (ValueError, AttributeError):
+                    winner_memory = -1.0
+            else:
+                winner_runtime = -1
+                winner_memory = -1.0
+        else:
+            winner_runtime = -1
+            winner_memory = -1.0
+    except Exception as e:
+        print(f"Error getting winner submission data: {e}")
+        winner_runtime = -1
+        winner_memory = -1.0
+    
     # Set match duration (fallback - WebSocket should handle this)
     match.match_seconds = 0  # Default for REST API submissions
     
@@ -143,17 +180,17 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     elo_change = 15
     match.elo_change = elo_change
     
-    # Update user ELOs
-    winner_result = await db.execute(select(User).where(User.id == winner_id))
-    winner = winner_result.scalar_one_or_none()
-    loser_result = await db.execute(select(User).where(User.id == loser_id))
-    loser = loser_result.scalar_one_or_none()
+    # Update user ELOs and submission data
+    winner.user_elo += elo_change
+    loser.user_elo -= elo_change
+    match.winner_elo = winner.user_elo
+    match.loser_elo = loser.user_elo
     
-    if winner and loser:
-        winner.user_elo += elo_change
-        loser.user_elo -= elo_change
-        match.winner_elo = winner.user_elo
-        match.loser_elo = loser.user_elo
+    # Set runtime and memory data
+    match.winner_runtime = winner_runtime
+    match.loser_runtime = -1  # Loser gets -1 for runtime
+    match.winner_memory = winner_memory
+    match.loser_memory = -1.0  # Loser gets -1 for memory
     
     await db.commit()
     
@@ -224,6 +261,12 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
         match.winner_elo = winner.user_elo
         match.loser_elo = loser.user_elo
     
+    # Set runtime and memory data for resignation (both get -1 since no valid submission)
+    match.winner_runtime = -1
+    match.loser_runtime = -1
+    match.winner_memory = -1.0
+    match.loser_memory = -1.0
+    
     await db.commit()
     
     return {
@@ -266,12 +309,16 @@ async def get_match_result(match_id: int, db: AsyncSession = Depends(get_db)):
         "winner": {
             "id": winner.id,
             "username": winner.leetcode_username or winner.email,
-            "elo": match.winner_elo
+            "elo": match.winner_elo,
+            "runtime": match.winner_runtime,
+            "memory": match.winner_memory
         },
         "loser": {
             "id": loser.id,
             "username": loser.leetcode_username or loser.email,
-            "elo": match.loser_elo
+            "elo": match.loser_elo,
+            "runtime": match.loser_runtime,
+            "memory": match.loser_memory
         },
         "elo_change": match.elo_change,
         "problem": match.leetcode_problem,

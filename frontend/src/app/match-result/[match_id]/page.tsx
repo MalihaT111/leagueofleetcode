@@ -84,8 +84,8 @@ export default function MatchResultPage() {
   const result = {
     match_id: data.match_id,
     problem: {
-      title: data.problem?.title || "Unknown Problem",
-      slug: data.problem?.slug || "unknown",
+      title: data.problem || "Unknown Problem",
+      slug: data.problem || "unknown",
       difficulty: "Medium", // Mock difficulty
     },
     duration: formatDuration(data.match_duration || 0),
@@ -104,14 +104,14 @@ export default function MatchResultPage() {
 
   const performanceData = {
     winner: {
-      executionTime: `${result.winner.runtime} ms`,
-      memoryUsage: `${result.winner.memory} MB`,
+      executionTime: result.winner.runtime === -1 ? "N/A" : `${result.winner.runtime} ms`,
+      memoryUsage: result.winner.memory === -1 ? "N/A" : `${result.winner.memory} MB`,
       description: "Winner's Stats:",
     },
     loser: {
-      executionTime: `${result.loser.runtime} ms`,
-      memoryUsage: `${result.loser.memory} MB`,
-      description: "Loser's implementation",
+      executionTime: result.loser.runtime === -1 ? "N/A" : `${result.loser.runtime} ms`,
+      memoryUsage: result.loser.memory === -1 ? "N/A" : `${result.loser.memory} MB`,
+      description: "Loser's Stats:",
     },
   };
 
@@ -173,8 +173,9 @@ export default function MatchResultPage() {
                     fw={700}
                     style={{
                       fontFamily: "monospace",
-                      color:
-                        selectedPlayer === "winner" ? "#06d6a0" : "#ff6b6b",
+                      color: performanceData[selectedPlayer].executionTime === "N/A" 
+                        ? "#888888" 
+                        : selectedPlayer === "winner" ? "#06d6a0" : "#ff6b6b",
                     }}
                   >
                     {performanceData[selectedPlayer].executionTime}
@@ -195,7 +196,9 @@ export default function MatchResultPage() {
                     fw={700}
                     style={{
                       fontFamily: "monospace",
-                      color: "#ffd166",
+                      color: performanceData[selectedPlayer].memoryUsage === "N/A" 
+                        ? "#888888" 
+                        : "#ffd166",
                     }}
                   >
                     {performanceData[selectedPlayer].memoryUsage}

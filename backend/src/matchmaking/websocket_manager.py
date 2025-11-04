@@ -260,6 +260,28 @@ class WebSocketManager:
         elo_change = 15
         match.elo_change = elo_change
 
+        # Get runtime and memory data from the winner's submission
+        try:
+            if recent_submission:
+                # Parse runtime (remove "ms" and convert to int)
+                try:
+                    winner_runtime = int(recent_submission.runtime.replace(" ms", "").replace("ms", "")) if recent_submission.runtime else -1
+                except (ValueError, AttributeError):
+                    winner_runtime = -1
+                
+                # Parse memory (remove "MB" and convert to float)
+                try:
+                    winner_memory = float(recent_submission.memory.replace(" MB", "").replace("MB", "")) if recent_submission.memory else -1.0
+                except (ValueError, AttributeError):
+                    winner_memory = -1.0
+            else:
+                winner_runtime = -1
+                winner_memory = -1.0
+        except Exception as e:
+            print(f"Error parsing submission data: {e}")
+            winner_runtime = -1
+            winner_memory = -1.0
+
         # Update user ELOs
         winner_result = await db.execute(select(User).where(User.id == winner_id))
         winner = winner_result.scalar_one_or_none()
@@ -271,6 +293,12 @@ class WebSocketManager:
             loser.user_elo -= elo_change
             match.winner_elo = winner.user_elo
             match.loser_elo = loser.user_elo
+
+        # Set runtime and memory data
+        match.winner_runtime = winner_runtime
+        match.loser_runtime = -1  # Loser gets -1 for runtime
+        match.winner_memory = winner_memory
+        match.loser_memory = -1.0  # Loser gets -1 for memory
 
         await db.commit()
 
@@ -359,6 +387,12 @@ class WebSocketManager:
             loser.user_elo -= loser_elo_change
             match.winner_elo = winner.user_elo
             match.loser_elo = loser.user_elo
+
+        # Set runtime and memory data for resignation (both get -1 since no valid submission)
+        match.winner_runtime = -1
+        match.loser_runtime = -1
+        match.winner_memory = -1.0
+        match.loser_memory = -1.0
 
         await db.commit()
 
