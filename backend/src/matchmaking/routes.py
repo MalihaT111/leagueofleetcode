@@ -136,6 +136,9 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     else:
         raise HTTPException(status_code=400, detail="User not in this match")
     
+    # Set match duration (fallback - WebSocket should handle this)
+    match.match_seconds = 0  # Default for REST API submissions
+    
     # Calculate ELO changes (simple +15/-15 for now)
     elo_change = 15
     match.elo_change = elo_change
@@ -200,6 +203,9 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
     else:
         print(f"⚠️ Warning: No problem found for resigned match {match_id}")
         match.leetcode_problem = "unknown"
+    
+    # Set match duration (fallback - WebSocket should handle this)
+    match.match_seconds = 0  # Default for REST API resignations
     
     # ELO changes for resignation: winner gets +15, loser loses -10
     winner_elo_change = 15

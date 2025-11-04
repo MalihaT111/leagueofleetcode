@@ -159,7 +159,7 @@ class WebSocketManager:
         except Exception as e:
             print(f"❌ Error creating match: {e}")
 
-    async def submit_solution(self, match_id: int, user_id: int, db: AsyncSession):
+    async def submit_solution(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
         """Handle solution submission"""
         from sqlalchemy import select
         from ..database.models import MatchHistory
@@ -185,6 +185,21 @@ class WebSocketManager:
             match.loser_id = loser_id
         else:
             return False
+
+        # Use frontend timer value if provided, otherwise calculate from server
+        if frontend_seconds > 0:
+            match.match_seconds = frontend_seconds
+            print(f"⏱️ Match {match_id} duration (from frontend): {frontend_seconds} seconds")
+        else:
+            # Fallback to server calculation
+            timer_data = self.match_timers.get(match_id)
+            if timer_data and timer_data.get("start_time"):
+                match_duration = int(time.time() - timer_data["start_time"])
+                match.match_seconds = match_duration
+                print(f"⏱️ Match {match_id} duration (server calculated): {match_duration} seconds")
+            else:
+                match.match_seconds = 0
+                print(f"⚠️ No timer data found for match {match_id}")
 
         # Update match with problem slug and ELO changes
         problem = self.match_problems.get(match_id)
@@ -229,7 +244,7 @@ class WebSocketManager:
         print(f"🏆 Match {match_id} completed. Winner: {winner_id}, Loser: {loser_id}")
         return True
 
-    async def resign_match(self, match_id: int, user_id: int, db: AsyncSession):
+    async def resign_match(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
         """Handle match resignation"""
         from sqlalchemy import select
         from ..database.models import MatchHistory
@@ -256,6 +271,21 @@ class WebSocketManager:
             loser_id = match.loser_id
         else:
             return False
+
+        # Use frontend timer value if provided, otherwise calculate from server
+        if frontend_seconds > 0:
+            match.match_seconds = frontend_seconds
+            print(f"⏱️ Match {match_id} resigned after (from frontend): {frontend_seconds} seconds")
+        else:
+            # Fallback to server calculation
+            timer_data = self.match_timers.get(match_id)
+            if timer_data and timer_data.get("start_time"):
+                match_duration = int(time.time() - timer_data["start_time"])
+                match.match_seconds = match_duration
+                print(f"⏱️ Match {match_id} resigned after (server calculated): {match_duration} seconds")
+            else:
+                match.match_seconds = 0
+                print(f"⚠️ No timer data found for resigned match {match_id}")
 
         # Update match with problem slug and ELO changes
         problem = self.match_problems.get(match_id)

@@ -182,16 +182,18 @@ export const useMatchmakingWebSocket = (userId: number | null, onMatchCompleted?
   const submitSolution = useCallback((matchId: number) => {
     sendMessage({ 
       type: 'submit_solution', 
-      match_id: matchId 
+      match_id: matchId,
+      frontend_seconds: matchSeconds  // Send current frontend timer value
     });
-  }, [sendMessage]);
+  }, [sendMessage, matchSeconds]);
 
   const resignMatch = useCallback((matchId: number) => {
     sendMessage({ 
       type: 'resign_match', 
-      match_id: matchId 
+      match_id: matchId,
+      frontend_seconds: matchSeconds  // Send current frontend timer value
     });
-  }, [sendMessage]);
+  }, [sendMessage, matchSeconds]);
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {

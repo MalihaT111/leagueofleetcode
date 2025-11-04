@@ -66,10 +66,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                 
             elif message_type == "submit_solution":
                 match_id = message.get("match_id")
+                frontend_seconds = message.get("frontend_seconds", 0)  # Get frontend timer value
                 if match_id:
                     from ..database.database import AsyncSessionLocal
                     async with AsyncSessionLocal() as db:
-                        success = await websocket_manager.submit_solution(match_id, user_id, db)
+                        success = await websocket_manager.submit_solution(match_id, user_id, db, frontend_seconds)
                         if not success:
                             await websocket_manager.send_to_user(user_id, {
                                 "type": "error",
@@ -78,10 +79,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                             
             elif message_type == "resign_match":
                 match_id = message.get("match_id")
+                frontend_seconds = message.get("frontend_seconds", 0)  # Get frontend timer value
                 if match_id:
                     from ..database.database import AsyncSessionLocal
                     async with AsyncSessionLocal() as db:
-                        success = await websocket_manager.resign_match(match_id, user_id, db)
+                        success = await websocket_manager.resign_match(match_id, user_id, db, frontend_seconds)
                         if not success:
                             await websocket_manager.send_to_user(user_id, {
                                 "type": "error",
