@@ -12,17 +12,19 @@ interface MatchFoundProps {
     opponent: string;
     opponent_elo: number;
     problem: {
-      acceptance_rate: string
+      acceptance_rate?: string
       title: string;
-      slug: string;
+      titleSlug?: string;
+      slug?: string;
       difficulty: string;
       content: string;
     };
   };
   user: any;
+  onSubmit?: () => void;
 }
 
-export default function MatchFound({ match, user }: MatchFoundProps) {
+export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
   const [countdown, setCountdown] = useState(3);
   const [seconds, setSeconds] = useState(0);
   const [started, setStarted] = useState(false);
@@ -73,19 +75,26 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
 
   // Handle submit solution
   const handleSubmit = async () => {
-    try {
-      await submitSolutionMutation.mutateAsync({
-        matchId: match.match_id,
-        userId: user.id
-      });
+    if (onSubmit) {
+      // Use WebSocket submission
+      onSubmit();
       setMatchCompleted(true);
-      
-      // Redirect to existing results page after short delay
-      setTimeout(() => {
-        router.push(`/match-result/${match.match_id}`);
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to submit solution:", error);
+    } else {
+      // Fallback to REST API
+      try {
+        await submitSolutionMutation.mutateAsync({
+          matchId: match.match_id,
+          userId: user.id
+        });
+        setMatchCompleted(true);
+        
+        // Redirect to existing results page after short delay
+        setTimeout(() => {
+          router.push(`/match-result/${match.match_id}`);
+        }, 2000);
+      } catch (error) {
+        console.error("Failed to submit solution:", error);
+      }
     }
   };
 

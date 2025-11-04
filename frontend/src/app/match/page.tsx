@@ -1,14 +1,10 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
-import {
-  useLeaveQueue,
-  useMatchStatus,
-  useJoinQueue,
-} from "@/lib/api/queries/matchmaking";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthService, User } from "@/utils/auth";
 import Matchmaking from "@/components/match/Matchmaking";
 import MatchFound from "@/components/match/MatchFound";
+import { useMatchmakingWebSocket } from "@/lib/hooks/useMatchmakingWebSocket";
 
 // Type definitions for match data
 
@@ -38,26 +34,22 @@ interface QueueResponse {
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
   const [user, setUser] = useState<User | null>(null);
-  const [inQueue, setInQueue] = useState(false);
-  const [matchFound, setMatchFound] = useState(false);
-  const [matchData, setMatchData] = useState<MatchData | null>(null);
-  const hasJoinedQueueRef = useRef(false);
-
-  const leaveQueueMutation = useLeaveQueue();
-  const joinQueueMutation = useJoinQueue();
   const router = useRouter();
 
-  // Poll for match status when user is in queue
-  const { data: matchStatus } = useMatchStatus(
-    user?.id || 0,
-    inQueue && user?.id !== null,
-  );
+  // WebSocket hook for real-time matchmaking
+  const {
+    isConnected,
+    isInQueue,
+    matchFound,
+    matchData,
+    error,
+    joinQueue,
+    leaveQueue,
+    submitSolution
+  } = useMatchmakingWebSocket(user?.id || null);
 
   // Get current user and join queue on component mount
   useEffect(() => {
-    if (hasJoinedQueueRef.current) return; // Prevent running multiple times
-    hasJoinedQueueRef.current = true;
-
     const getCurrentUserAndJoinQueue = async () => {
       try {
         const currentUser = await AuthService.getCurrentUser();
@@ -67,39 +59,22 @@ export default function MatchmakingPage() {
           return;
         }
         setUser(currentUser);
-
-        // Join queue immediately when page loads
-        const result = await joinQueueMutation.mutateAsync(currentUser.id);
-
-        console.log("Join queue result:", result);
-
-        if (result.status === "matched" && result.match) {
-          // Immediate match found
-          console.log("Immediate match found!", result.match);
-          setMatchData(result.match);
-          setMatchFound(true);
-        } else if (result.status === "queued") {
-          // Start polling for matches after a short delay
-          console.log("Added to queue, starting polling...");
-          setTimeout(() => {
-            setInQueue(true);
-          }, 1000); // Wait 1 second before starting to poll
-        } else {
-          console.error("Unexpected join queue result:", result);
-          console.log("Result status:", result.status);
-          console.log("Result match:", result.match);
-        }
       } catch (error) {
-        console.error("Failed to get current user or join queue:", error);
-        console.error(
-          "Error details:",
-          error instanceof Error ? error.message : String(error),
-        );
+        console.error("Failed to get current user:", error);
+        router.push("/signin");
       }
     };
 
     getCurrentUserAndJoinQueue();
-  }, []); // Empty dependency array - only run once on mount
+  }, [router]);
+
+  // Auto-join queue when user is loaded and WebSocket is connected
+  useEffect(() => {
+    if (user && isConnected && !isInQueue && !matchFound) {
+      console.log("🚀 Auto-joining queue via WebSocket");
+      joinQueue();
+    }
+  }, [user, isConnected, isInQueue, matchFound, joinQueue]);
 
   // Timer effect
   useEffect(() => {
@@ -110,56 +85,56 @@ export default function MatchmakingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Cleanup: Remove user from queue when component unmounts or page is closed
+  // Cleanup: WebSocket handles disconnection automatically
   useEffect(() => {
-    // Handle page refresh/close
     const handleBeforeUnload = () => {
-      if (user?.id && (inQueue || !matchFound)) {
-        // Use navigator.sendBeacon for reliable cleanup on page unload
-        navigator.sendBeacon('/api/matchmaking/leave', JSON.stringify({ userId: user.id }));
+      if (user?.id && isInQueue) {
+        leaveQueue();
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Cleanup on component unmount
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      // Only cleanup if user is still in queue and hasn't found a match
-      if (user?.id && (inQueue || !matchFound)) {
-        // Use a synchronous approach for cleanup on unmount
-        leaveQueueMutation.mutate(user.id);
-      }
     };
-  }, []); // Empty dependency array to prevent infinite loops
-
-  // Check for match status updates
-  useEffect(() => {
-    if (matchStatus?.status === "matched" && matchStatus.match && !matchFound) {
-      console.log("Match found via polling!", matchStatus.match);
-      setInQueue(false);
-      setMatchData(matchStatus.match);
-      setMatchFound(true);
-    }
-  }, [matchStatus, matchFound]);
+  }, [user?.id, isInQueue, leaveQueue]);
 
   // Handle leaving queue
   const handleLeaveQueue = async () => {
-    if (!user?.id) return;
-
-    try {
-      await leaveQueueMutation.mutateAsync(user.id);
-      setInQueue(false);
-      router.push("/"); // Navigate back to home or previous page
-    } catch (error) {
-      console.error("Failed to leave queue:", error);
-    }
+    leaveQueue();
+    router.push("/");
   };
+
+  // Show error state
+  if (error) {
+    return (
+      <div style={{ padding: '20px', color: 'red' }}>
+        Error: {error}
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
 
   // Conditional rendering based on match status
   if (matchFound && matchData && user) {
-    return <MatchFound match={matchData} user={user} />;
+    return (
+      <MatchFound 
+        match={{
+          match_id: matchData.match_id,
+          opponent: matchData.opponent.username,
+          opponent_elo: matchData.opponent.elo,
+          problem: {
+            title: matchData.problem.title,
+            titleSlug: matchData.problem.slug,
+            difficulty: matchData.problem.difficulty,
+            content: "" // WebSocket doesn't send content
+          }
+        }} 
+        user={user}
+        onSubmit={() => submitSolution(matchData.match_id)}
+      />
+    );
   }
 
   // Show matchmaking component while searching
@@ -169,11 +144,12 @@ export default function MatchmakingPage() {
         user={user}
         seconds={seconds}
         handleLeaveQueue={handleLeaveQueue}
-        leaveQueueMutation={leaveQueueMutation}
+        isLeaving={false}
+        connectionStatus={isConnected ? 'Connected' : 'Connecting...'}
       />
     );
   }
 
   // Loading state while getting user
-  return null;
+  return <div>Loading...</div>;
 }

@@ -9,10 +9,11 @@ interface MatchmakingProps {
   user: User; 
   seconds: number;
   handleLeaveQueue: () => Promise<void>;
-  leaveQueueMutation: UseMutationResult<any, Error, number, unknown>;
+  isLeaving?: boolean;
+  connectionStatus?: string;
 }
 
-export default function Matchmaking({ user, seconds, handleLeaveQueue, leaveQueueMutation }: MatchmakingProps) {
+export default function Matchmaking({ user, seconds, handleLeaveQueue, isLeaving = false, connectionStatus }: MatchmakingProps) {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
@@ -63,6 +64,11 @@ export default function Matchmaking({ user, seconds, handleLeaveQueue, leaveQueu
           >
             finding a worthy opponent...
           </Text>
+          {connectionStatus && (
+            <Text size="xs" c="dimmed">
+              {connectionStatus}
+            </Text>
+          )}
           <div
             style={{
               width: 60,
@@ -98,7 +104,7 @@ export default function Matchmaking({ user, seconds, handleLeaveQueue, leaveQueu
         mt="xl"
         style={{ fontWeight: "bold" }}
         onClick={handleLeaveQueue}
-        loading={leaveQueueMutation.isPending}
+        loading={isLeaving}
       >
         Cancel
       </Button>
