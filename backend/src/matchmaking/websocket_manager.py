@@ -8,6 +8,7 @@ from sqlalchemy import select
 from ..database.models import User
 from .manager import MatchmakingManager
 from .service import create_match_record
+import time
 
 class WebSocketManager:
     def __init__(self):
@@ -17,6 +18,8 @@ class WebSocketManager:
         self.queue: Dict[int, dict] = {}  # user_id -> {elo, websocket}
         # Store match problems by match_id
         self.match_problems: Dict[int, dict] = {}
+        # Store match timers by match_id
+        self.match_timers: Dict[int, dict] = {}  # match_id -> {start_time, players, status}
         self.matchmaking_manager = MatchmakingManager()
 
     async def connect(self, websocket: WebSocket, user_id: int):
@@ -119,15 +122,19 @@ class WebSocketManager:
 
             print(f"✅ Match created: {match.match_id} between {user1.email} and {user2.email}")
 
+            # Initialize match timer
+            self.match_timers[match.match_id] = {
+                "start_time": None,  # Will be set when countdown ends
+                "players": [user1_id, user2_id],
+                "status": "countdown",  # countdown -> active -> completed
+                "countdown": 3
+            }
+
             # Notify both players
             match_data = {
                 "type": "match_found",
                 "match_id": match.match_id,
                 "problem": problem.dict(),
-                "opponent": {
-                    "username": user2.leetcode_username or user2.email,
-                    "elo": user2.user_elo
-                }
             }
 
             await self.send_to_user(user1_id, {
@@ -145,6 +152,9 @@ class WebSocketManager:
                     "elo": user1.user_elo
                 }
             })
+
+            # Start countdown timer for this match
+            asyncio.create_task(self.run_match_timer(match.match_id))
 
         except Exception as e:
             print(f"❌ Error creating match: {e}")
@@ -197,6 +207,9 @@ class WebSocketManager:
             match.loser_elo = loser.user_elo
 
         await db.commit()
+
+        # Stop the timer
+        self.stop_match_timer(match_id)
 
         # Notify both players
         await self.send_to_user(winner_id, {
@@ -286,7 +299,78 @@ class WebSocketManager:
         })
 
         print(f"🏳️ Match {match_id} ended by resignation. Winner: {winner_id}, Loser: {loser_id}")
+        
+        # Stop the timer for this match
+        if match_id in self.match_timers:
+            self.match_timers[match_id]["status"] = "completed"
+        
         return True
+
+    async def run_match_timer(self, match_id: int):
+        """Run the synchronized timer for a match"""
+        if match_id not in self.match_timers:
+            return
+
+        timer_data = self.match_timers[match_id]
+        players = timer_data["players"]
+
+        try:
+            # Countdown phase (3, 2, 1)
+            for countdown in [3, 2, 1]:
+                if timer_data["status"] != "countdown":
+                    return
+                
+                # Send countdown to both players
+                for player_id in players:
+                    await self.send_to_user(player_id, {
+                        "type": "timer_update",
+                        "phase": "countdown",
+                        "countdown": countdown
+                    })
+                
+                await asyncio.sleep(1)
+
+            # Send "START!" message
+            for player_id in players:
+                await self.send_to_user(player_id, {
+                    "type": "timer_update",
+                    "phase": "start",
+                    "message": "START!"
+                })
+            
+            await asyncio.sleep(1)
+
+            # Start match timer
+            timer_data["status"] = "active"
+            timer_data["start_time"] = time.time()
+            match_seconds = 0
+
+            # Active match timer - send start time instead of continuous updates
+            start_timestamp = timer_data["start_time"]
+            
+            # Send match start time to both players for client-side calculation
+            for player_id in players:
+                await self.send_to_user(player_id, {
+                    "type": "timer_update",
+                    "phase": "active",
+                    "start_timestamp": start_timestamp
+                })
+            
+            # Keep timer alive but don't send continuous updates
+            while timer_data["status"] == "active":
+                await asyncio.sleep(5)  # Check every 5 seconds instead of every second
+
+        except Exception as e:
+            print(f"❌ Timer error for match {match_id}: {e}")
+        finally:
+            # Clean up timer data
+            if match_id in self.match_timers:
+                del self.match_timers[match_id]
+
+    def stop_match_timer(self, match_id: int):
+        """Stop the timer for a match"""
+        if match_id in self.match_timers:
+            self.match_timers[match_id]["status"] = "completed"
 
 # Global WebSocket manager instance
 websocket_manager = WebSocketManager()

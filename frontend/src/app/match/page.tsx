@@ -34,6 +34,7 @@ interface QueueResponse {
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
 
   // WebSocket hook for real-time matchmaking
@@ -46,8 +47,14 @@ export default function MatchmakingPage() {
     joinQueue,
     leaveQueue,
     submitSolution,
-    resignMatch
-  } = useMatchmakingWebSocket(user?.id || null);
+    resignMatch,
+    timerPhase,
+    countdown,
+    matchSeconds,
+    formattedTime
+  } = useMatchmakingWebSocket(user?.id || null, () => {
+    setIsRedirecting(true);
+  });
 
   // Get current user and join queue on component mount
   useEffect(() => {
@@ -118,7 +125,8 @@ export default function MatchmakingPage() {
   }
 
   // Conditional rendering based on match status
-  if (matchFound && matchData && user) {
+  // Keep showing MatchFound even during redirect phase
+  if ((matchFound || isRedirecting) && matchData && user) {
     return (
       <MatchFound 
         match={{
@@ -132,8 +140,18 @@ export default function MatchmakingPage() {
           }
         }} 
         user={user}
-        onSubmit={() => submitSolution(matchData.match_id)}
-        onResign={() => resignMatch(matchData.match_id)}
+        onSubmit={() => {
+          setIsRedirecting(true);
+          submitSolution(matchData.match_id);
+        }}
+        onResign={() => {
+          setIsRedirecting(true);
+          resignMatch(matchData.match_id);
+        }}
+        timerPhase={timerPhase}
+        countdown={countdown}
+        matchSeconds={matchSeconds}
+        formattedTime={formattedTime}
       />
     );
   }

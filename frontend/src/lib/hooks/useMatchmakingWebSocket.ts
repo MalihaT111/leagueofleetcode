@@ -25,14 +25,26 @@ interface WebSocketMessage {
   result?: string;
   elo_change?: string;
   message?: string;
+  phase?: string;
+  countdown?: number;
+  seconds?: number;
+  formatted_time?: string;
+  start_timestamp?: number;
 }
 
-export const useMatchmakingWebSocket = (userId: number | null) => {
+export const useMatchmakingWebSocket = (userId: number | null, onMatchCompleted?: () => void) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isInQueue, setIsInQueue] = useState(false);
   const [matchData, setMatchData] = useState<MatchFoundData | null>(null);
   const [matchFound, setMatchFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Timer states
+  const [timerPhase, setTimerPhase] = useState<'countdown' | 'start' | 'active' | null>(null);
+  const [countdown, setCountdown] = useState<number>(3);
+  const [matchSeconds, setMatchSeconds] = useState<number>(0);
+  const [formattedTime, setFormattedTime] = useState<string>("00:00");
+  const [startTimestamp, setStartTimestamp] = useState<number | null>(null);
   
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
@@ -72,12 +84,33 @@ export const useMatchmakingWebSocket = (userId: number | null) => {
               opponent: message.opponent!
             });
             setMatchFound(true);
+            // Reset timer states for new match
+            setTimerPhase(null);
+            setCountdown(3);
+            setMatchSeconds(0);
+            setFormattedTime("00:00");
+            setStartTimestamp(null);
+            break;
+
+          case 'timer_update':
+            if (message.phase === 'countdown') {
+              setTimerPhase('countdown');
+              setCountdown(message.countdown || 3);
+            } else if (message.phase === 'start') {
+              setTimerPhase('start');
+            } else if (message.phase === 'active') {
+              setTimerPhase('active');
+              setStartTimestamp(message.start_timestamp || Date.now() / 1000);
+            }
             break;
 
           case 'match_completed':
             console.log('🏁 Match completed:', message.result);
-            setMatchFound(false);
-            setMatchData(null);
+            
+            // Notify parent that match is completed (but keep state for UI)
+            if (onMatchCompleted) {
+              onMatchCompleted();
+            }
             
             // Redirect to results page after short delay
             setTimeout(() => {
@@ -182,6 +215,23 @@ export const useMatchmakingWebSocket = (userId: number | null) => {
     return () => clearInterval(interval);
   }, [isConnected, sendMessage]);
 
+  // Local timer calculation based on server start timestamp
+  useEffect(() => {
+    if (timerPhase === 'active' && startTimestamp) {
+      const interval = setInterval(() => {
+        const currentTime = Date.now() / 1000;
+        const elapsed = Math.floor(currentTime - startTimestamp);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        setMatchSeconds(elapsed);
+        setFormattedTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }, 100); // Update every 100ms for smooth display
+
+      return () => clearInterval(interval);
+    }
+  }, [timerPhase, startTimestamp]);
+
   return {
     isConnected,
     isInQueue,
@@ -193,6 +243,11 @@ export const useMatchmakingWebSocket = (userId: number | null) => {
     submitSolution,
     resignMatch,
     connect,
-    disconnect
+    disconnect,
+    // Timer states
+    timerPhase,
+    countdown,
+    matchSeconds,
+    formattedTime
   };
 };

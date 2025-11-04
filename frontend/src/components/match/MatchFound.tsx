@@ -20,44 +20,33 @@ interface MatchFoundProps {
   user: any;
   onSubmit?: () => void;
   onResign?: () => void;
+  timerPhase?: 'countdown' | 'start' | 'active' | null;
+  countdown?: number;
+  matchSeconds?: number;
+  formattedTime?: string;
 }
 
-export default function MatchFound({ match, user, onSubmit, onResign }: MatchFoundProps) {
-  const [countdown, setCountdown] = useState(3);
-  const [seconds, setSeconds] = useState(0);
-  const [started, setStarted] = useState(false);
+export default function MatchFound({ 
+  match, 
+  user, 
+  onSubmit, 
+  onResign, 
+  timerPhase, 
+  countdown = 3, 
+  matchSeconds = 0, 
+  formattedTime = "00:00" 
+}: MatchFoundProps) {
   const [matchCompleted, setMatchCompleted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResigning, setIsResigning] = useState(false);
   
   const router = useRouter();
   const submitSolutionMutation = useSubmitSolution();
   
-  // Poll for match completion (in case opponent submits)
-  const { data: matchStatus } = useMatchStatus(user.id, started && !matchCompleted);
-  // handle countdown first
-  useEffect(() => {
-    if (countdown > 0) {
-      const interval = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      // when countdown hits 0 → show "START!" briefly, then start match
-      const timeout = setTimeout(() => {
-        setStarted(true);
-      }, 1000); // 1s for the "START!" text
-      return () => clearTimeout(timeout);
-    }
-  }, [countdown]);
+  // Poll for match completion (fallback only)
+  const { data: matchStatus } = useMatchStatus(user.id, timerPhase === 'active' && !matchCompleted);
   
-  // match timer (only runs after countdown ends)
-  useEffect(() => {
-    if (started && !matchCompleted) {
-      const interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [started, matchCompleted]);
+  // Server handles all timing - no local timer needed
 
   // Check for match completion
   useEffect(() => {
@@ -73,10 +62,12 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
 
   // Handle submit solution
   const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
     if (onSubmit) {
-      // Use WebSocket submission
+      // Use WebSocket submission - don't change any state, just show loading
       onSubmit();
-      setMatchCompleted(true);
+      // Don't set matchCompleted - let WebSocket handle redirect
     } else {
       // Fallback to REST API
       try {
@@ -84,7 +75,6 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
           matchId: match.match_id,
           userId: user.id
         });
-        setMatchCompleted(true);
         
         // Redirect to existing results page after short delay
         setTimeout(() => {
@@ -92,16 +82,19 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
         }, 2000);
       } catch (error) {
         console.error("Failed to submit solution:", error);
+        setIsSubmitting(false); // Reset loading on error
       }
     }
   };
 
   // Handle resignation
   const handleResign = () => {
+    setIsResigning(true);
+    
     if (onResign) {
-      // Use WebSocket resignation
+      // Use WebSocket resignation - don't change any state, just show loading
       onResign();
-      setMatchCompleted(true);
+      // Don't set matchCompleted - let WebSocket handle redirect
     } else {
       // Fallback - redirect to results
       router.push(`/match-result/${match.match_id}`);
@@ -110,26 +103,24 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
   
 
   const problem = match.problem;
-  console.log(problem);
   const link = `https://leetcode.com/problems/${problem.titleSlug}`;
 
-  console.log(problem.titleSlug);
-
-
-
-  // format MM:SS
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-
-  // what to display in timer spot
+  // Server-controlled timer display
   let displayText;
+  let fontSize = "60px";
+  
   if (matchCompleted) {
     displayText = "MATCH COMPLETED";
-  } else if (!started) {
-    displayText = countdown > 0 ? countdown : "START!";
+  } else if (timerPhase === 'countdown') {
+    displayText = countdown;
+    fontSize = "80px";
+  } else if (timerPhase === 'start') {
+    displayText = "START!";
+  } else if (timerPhase === 'active') {
+    displayText = formattedTime;
   } else {
-    displayText = formatted;
+    // Fallback while waiting for server timer
+    displayText = "...";
   }
 
   return (
@@ -171,7 +162,7 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
       <Text
         className={orbitron.className}
         style={{
-          fontSize: !started && displayText !== "START!" ? "80px" : "60px",
+          fontSize: fontSize,
           fontWeight: 700,
           letterSpacing: "4px",
         }}
@@ -214,8 +205,8 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
             color: "black",
           }}
           onClick={handleSubmit}
-          loading={submitSolutionMutation.isPending}
-          disabled={!started || matchCompleted}
+          loading={isSubmitting || submitSolutionMutation.isPending}
+          disabled={timerPhase !== 'active' || matchCompleted || isSubmitting || isResigning}
         >
           Submit
         </Button>
@@ -230,7 +221,8 @@ export default function MatchFound({ match, user, onSubmit, onResign }: MatchFou
             color: "black",
           }}
           onClick={handleResign}
-          disabled={!started || matchCompleted}
+          loading={isResigning}
+          disabled={timerPhase !== 'active' || matchCompleted || isSubmitting || isResigning}
         >
           Resign
         </Button>
