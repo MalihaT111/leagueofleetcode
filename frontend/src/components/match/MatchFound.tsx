@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Flex, Stack, Title, Text, Button, Loader } from "@mantine/core";
+import { Flex, Stack, Title, Text, Button, Loader, Anchor } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import Navbar from "../navbar";
 import { ProfileBox } from "../profilebox";
@@ -174,7 +174,19 @@ export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
 
       {/* Problem link */}
       <Text size="sm" style={{ fontFamily: "monospace" }}>
-        Problem Link: {link}
+        Problem Link:{" "}
+        <Anchor
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "#1e88e5", // bright blue
+            textDecoration: "underline",
+            fontWeight: "bold",
+          }}
+        >
+          {link}
+        </Anchor>
       </Text>
 
       {/* Rules */}
