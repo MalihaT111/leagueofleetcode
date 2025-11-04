@@ -153,6 +153,13 @@ export const useMatchmakingWebSocket = (userId: number | null) => {
     });
   }, [sendMessage]);
 
+  const resignMatch = useCallback((matchId: number) => {
+    sendMessage({ 
+      type: 'resign_match', 
+      match_id: matchId 
+    });
+  }, [sendMessage]);
+
   // Connect on mount, disconnect on unmount
   useEffect(() => {
     if (userId) {
@@ -184,6 +191,7 @@ export const useMatchmakingWebSocket = (userId: number | null) => {
     joinQueue,
     leaveQueue,
     submitSolution,
+    resignMatch,
     connect,
     disconnect
   };

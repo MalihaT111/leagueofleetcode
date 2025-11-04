@@ -156,6 +156,79 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     
     return {"status": "completed", "winner_id": winner_id, "elo_change": elo_change}
 
+@router.post("/resign/{match_id}/{user_id}")
+async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(get_db)):
+    """Handle when a user resigns from a match"""
+    
+    # Find the match
+    match_result = await db.execute(
+        select(MatchHistory).where(MatchHistory.match_id == match_id)
+    )
+    match = match_result.scalar_one_or_none()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    # Check if match is already completed
+    if match.elo_change != 0:
+        raise HTTPException(status_code=400, detail="Match already completed")
+    
+    # Determine winner and loser (resigning user loses)
+    if match.winner_id == user_id:
+        # User was winner, now becomes loser
+        winner_id = match.loser_id
+        loser_id = match.winner_id
+        match.winner_id = winner_id
+        match.loser_id = loser_id
+    elif match.loser_id == user_id:
+        # User was loser, stays loser
+        winner_id = match.winner_id
+        loser_id = match.loser_id
+    else:
+        raise HTTPException(status_code=400, detail="User not in this match")
+    
+    # Get the problem for this match and update the leetcode_problem field
+    problem = manager.get_problem_for_match(match_id)
+    if problem:
+        try:
+            problem_slug = problem.slug if hasattr(problem, 'slug') else str(problem.get('slug', 'unknown'))
+            match.leetcode_problem = problem_slug
+            print(f"📝 Updated resigned match {match_id} with problem slug: {problem_slug}")
+        except Exception as e:
+            print(f"⚠️ Error getting problem slug for resigned match {match_id}: {e}")
+            match.leetcode_problem = "unknown"
+    else:
+        print(f"⚠️ Warning: No problem found for resigned match {match_id}")
+        match.leetcode_problem = "unknown"
+    
+    # ELO changes for resignation: winner gets +15, loser loses -10
+    winner_elo_change = 15
+    loser_elo_change = 10  # Resigning user loses 10 ELO
+    match.elo_change = loser_elo_change  # Store the loser's penalty
+    
+    # Update user ELOs
+    winner_result = await db.execute(select(User).where(User.id == winner_id))
+    winner = winner_result.scalar_one_or_none()
+    loser_result = await db.execute(select(User).where(User.id == loser_id))
+    loser = loser_result.scalar_one_or_none()
+    
+    if winner and loser:
+        winner.user_elo += winner_elo_change
+        loser.user_elo -= loser_elo_change
+        match.winner_elo = winner.user_elo
+        match.loser_elo = loser.user_elo
+    
+    await db.commit()
+    
+    return {
+        "status": "completed", 
+        "winner_id": winner_id, 
+        "loser_id": loser_id,
+        "resignation": True,
+        "winner_elo_change": winner_elo_change,
+        "loser_elo_change": loser_elo_change
+    }
+
 @router.get("/result/{match_id}")
 async def get_match_result(match_id: int, db: AsyncSession = Depends(get_db)):
     """Get the result of a completed match"""

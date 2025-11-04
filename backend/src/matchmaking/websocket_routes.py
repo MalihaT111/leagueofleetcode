@@ -75,6 +75,18 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                                 "type": "error",
                                 "message": "Failed to submit solution"
                             })
+                            
+            elif message_type == "resign_match":
+                match_id = message.get("match_id")
+                if match_id:
+                    from ..database.database import AsyncSessionLocal
+                    async with AsyncSessionLocal() as db:
+                        success = await websocket_manager.resign_match(match_id, user_id, db)
+                        if not success:
+                            await websocket_manager.send_to_user(user_id, {
+                                "type": "error",
+                                "message": "Failed to resign from match"
+                            })
                         
             elif message_type == "ping":
                 # Heartbeat to keep connection alive

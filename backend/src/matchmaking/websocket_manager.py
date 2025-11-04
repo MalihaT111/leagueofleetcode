@@ -216,5 +216,77 @@ class WebSocketManager:
         print(f"🏆 Match {match_id} completed. Winner: {winner_id}, Loser: {loser_id}")
         return True
 
+    async def resign_match(self, match_id: int, user_id: int, db: AsyncSession):
+        """Handle match resignation"""
+        from sqlalchemy import select
+        from ..database.models import MatchHistory
+
+        # Find the match
+        match_result = await db.execute(
+            select(MatchHistory).where(MatchHistory.match_id == match_id)
+        )
+        match = match_result.scalar_one_or_none()
+
+        if not match or match.elo_change != 0:
+            return False
+
+        # Determine winner and loser (resigning user loses)
+        if match.winner_id == user_id:
+            # User was winner, now becomes loser
+            winner_id = match.loser_id
+            loser_id = match.winner_id
+            match.winner_id = winner_id
+            match.loser_id = loser_id
+        elif match.loser_id == user_id:
+            # User was loser, stays loser
+            winner_id = match.winner_id
+            loser_id = match.loser_id
+        else:
+            return False
+
+        # Update match with problem slug and ELO changes
+        problem = self.match_problems.get(match_id)
+        if problem:
+            match.leetcode_problem = problem.slug
+
+        # ELO changes for resignation: winner gets +15, loser loses -10
+        winner_elo_change = 15
+        loser_elo_change = 10
+        match.elo_change = loser_elo_change
+
+        # Update user ELOs
+        winner_result = await db.execute(select(User).where(User.id == winner_id))
+        winner = winner_result.scalar_one_or_none()
+        loser_result = await db.execute(select(User).where(User.id == loser_id))
+        loser = loser_result.scalar_one_or_none()
+
+        if winner and loser:
+            winner.user_elo += winner_elo_change
+            loser.user_elo -= loser_elo_change
+            match.winner_elo = winner.user_elo
+            match.loser_elo = loser.user_elo
+
+        await db.commit()
+
+        # Notify both players
+        await self.send_to_user(winner_id, {
+            "type": "match_completed",
+            "result": "won",
+            "match_id": match_id,
+            "elo_change": f"+{winner_elo_change}",
+            "reason": "opponent_resigned"
+        })
+
+        await self.send_to_user(loser_id, {
+            "type": "match_completed", 
+            "result": "lost",
+            "match_id": match_id,
+            "elo_change": f"-{loser_elo_change}",
+            "reason": "resigned"
+        })
+
+        print(f"🏳️ Match {match_id} ended by resignation. Winner: {winner_id}, Loser: {loser_id}")
+        return True
+
 # Global WebSocket manager instance
 websocket_manager = WebSocketManager()

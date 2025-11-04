@@ -45,7 +45,8 @@ export default function MatchmakingPage() {
     error,
     joinQueue,
     leaveQueue,
-    submitSolution
+    submitSolution,
+    resignMatch
   } = useMatchmakingWebSocket(user?.id || null);
 
   // Get current user and join queue on component mount
@@ -128,11 +129,11 @@ export default function MatchmakingPage() {
             title: matchData.problem.title,
             titleSlug: matchData.problem.slug,
             difficulty: matchData.problem.difficulty,
-            content: "" // WebSocket doesn't send content
           }
         }} 
         user={user}
         onSubmit={() => submitSolution(matchData.match_id)}
+        onResign={() => resignMatch(matchData.match_id)}
       />
     );
   }

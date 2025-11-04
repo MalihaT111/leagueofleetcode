@@ -19,9 +19,10 @@ interface MatchFoundProps {
   };
   user: any;
   onSubmit?: () => void;
+  onResign?: () => void;
 }
 
-export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
+export default function MatchFound({ match, user, onSubmit, onResign }: MatchFoundProps) {
   const [countdown, setCountdown] = useState(3);
   const [seconds, setSeconds] = useState(0);
   const [started, setStarted] = useState(false);
@@ -97,8 +98,14 @@ export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
 
   // Handle resignation
   const handleResign = () => {
-    // TODO: Implement resignation logic
-    router.push(`/match-result/${match.match_id}`);
+    if (onResign) {
+      // Use WebSocket resignation
+      onResign();
+      setMatchCompleted(true);
+    } else {
+      // Fallback - redirect to results
+      router.push(`/match-result/${match.match_id}`);
+    }
   };
   
 
