@@ -1,24 +1,24 @@
 "use client";
-import Navbar from "@/components/navbar";
 import { useEffect, useState, useRef } from "react";
-import { Flex, Stack, Title, Text, Button } from "@mantine/core";
-import { ProfileBox } from "@/components/profilebox";
-import { orbitron } from "../fonts";
 import {
   useLeaveQueue,
   useMatchStatus,
   useJoinQueue,
 } from "@/lib/api/queries/matchmaking";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/utils/auth";
+import { AuthService, User } from "@/utils/auth";
+import Matchmaking from "@/components/match/Matchmaking";
+import MatchFound from "@/components/match/MatchFound";
 
 // Type definitions for match data
 
 interface Problem {
     id: number,
     title: string,
+    titleSlug: string,
     slug: string,
     difficulty: string,
+    content: string,
     tags: string[],
     acceptance_rate: string
 }
@@ -37,10 +37,10 @@ interface QueueResponse {
 
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
-  const [userId, setUserId] = useState<number | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [inQueue, setInQueue] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
-  const [queueData, setQueueData] = useState<QueueResponse | null>();
+  const [matchData, setMatchData] = useState<MatchData | null>(null);
   const hasJoinedQueueRef = useRef(false);
 
   const leaveQueueMutation = useLeaveQueue();
@@ -49,8 +49,8 @@ export default function MatchmakingPage() {
 
   // Poll for match status when user is in queue
   const { data: matchStatus } = useMatchStatus(
-    userId || 0,
-    inQueue && userId !== null,
+    user?.id || 0,
+    inQueue && user?.id !== null,
   );
 
   // Get current user and join queue on component mount
@@ -60,22 +60,24 @@ export default function MatchmakingPage() {
 
     const getCurrentUserAndJoinQueue = async () => {
       try {
-        const user = await AuthService.getCurrentUser();
-        setUserId(user.id);
+        const currentUser = await AuthService.getCurrentUser();
+        if (!currentUser) {
+          console.warn("No user found — redirecting to home...");
+          router.push("/");
+          return;
+        }
+        setUser(currentUser);
 
         // Join queue immediately when page loads
-        const result = await joinQueueMutation.mutateAsync(user.id);
+        const result = await joinQueueMutation.mutateAsync(currentUser.id);
 
         console.log("Join queue result:", result);
 
         if (result.status === "matched" && result.match) {
           // Immediate match found
           console.log("Immediate match found!", result.match);
+          setMatchData(result.match);
           setMatchFound(true);
-          setQueueData(result);
-          
-          console.log(queueData);
-
         } else if (result.status === "queued") {
           // Start polling for matches after a short delay
           console.log("Added to queue, starting polling...");
@@ -93,8 +95,6 @@ export default function MatchmakingPage() {
           "Error details:",
           error instanceof Error ? error.message : String(error),
         );
-        // Don't redirect to signin immediately, let user see the error
-        // router.push("/signin");
       }
     };
 
@@ -110,24 +110,46 @@ export default function MatchmakingPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Cleanup: Remove user from queue when component unmounts or page is closed
+  useEffect(() => {
+    // Handle page refresh/close
+    const handleBeforeUnload = () => {
+      if (user?.id && (inQueue || !matchFound)) {
+        // Use navigator.sendBeacon for reliable cleanup on page unload
+        navigator.sendBeacon('/api/matchmaking/leave', JSON.stringify({ userId: user.id }));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Cleanup on component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Only cleanup if user is still in queue and hasn't found a match
+      if (user?.id && (inQueue || !matchFound)) {
+        // Use a synchronous approach for cleanup on unmount
+        leaveQueueMutation.mutate(user.id);
+      }
+    };
+  }, []); // Empty dependency array to prevent infinite loops
+
   // Check for match status updates
   useEffect(() => {
     if (matchStatus?.status === "matched" && matchStatus.match && !matchFound) {
       console.log("Match found via polling!", matchStatus.match);
       setInQueue(false);
+      setMatchData(matchStatus.match);
       setMatchFound(true);
-      setQueueData(matchStatus);
-      console.log(queueData?.match?.problem);
-      
     }
-  }, [matchStatus, router, matchFound]);
+  }, [matchStatus, matchFound]);
 
   // Handle leaving queue
   const handleLeaveQueue = async () => {
-    if (!userId) return;
+    if (!user?.id) return;
 
     try {
-      await leaveQueueMutation.mutateAsync(userId);
+      await leaveQueueMutation.mutateAsync(user.id);
       setInQueue(false);
       router.push("/"); // Navigate back to home or previous page
     } catch (error) {
@@ -135,96 +157,23 @@ export default function MatchmakingPage() {
     }
   };
 
-  // format as MM:SS
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  // Conditional rendering based on match status
+  if (matchFound && matchData && user) {
+    return <MatchFound match={matchData} user={user} />;
+  }
 
-  return (
-    <Flex
-      h="100vh"
-      w="100%"
-      direction="column"
-      align="center"
-      justify="center"
-      bg="dark"
-      c="white"
-      gap="xl"
-    >
-      <Navbar />
-      <Title
-        style={{
-          fontSize: "70px",
-          fontStyle: "italic",
-          fontWeight: 700,
-          lineHeight: "1",
-          fontFamily: "var(--font-montserrat), sans-serif",
-        }}
-        order={1}
-      >
-        MATCHMAKING
-      </Title>
+  // Show matchmaking component while searching
+  if (user) {
+    return (
+      <Matchmaking
+        user={user}
+        seconds={seconds}
+        handleLeaveQueue={handleLeaveQueue}
+        leaveQueueMutation={leaveQueueMutation}
+      />
+    );
+  }
 
-      {/* Profile Row */}
-      <Flex align="center" justify="center" gap="xl">
-        <Stack align="center" gap="xs">
-          <ProfileBox username="Username" rating={1500} />
-        </Stack>
-
-        <Stack align="center" gap="xs">
-          <Text
-            style={{
-              fontSize: "30px",
-              fontStyle: "italic",
-              fontWeight: 700,
-              lineHeight: "1",
-              fontFamily: "var(--font-montserrat), sans-serif",
-            }}
-            size="sm"
-            c="dimmed"
-            ta="center"
-          >
-            finding a worthy opponent...
-          </Text>
-          <div
-            style={{
-              width: 60,
-              height: 60,
-              border: "4px solid white",
-              borderRadius: "50%",
-            }}
-          />
-          <Text
-            size="sm"
-            className={orbitron.className}
-            style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              letterSpacing: "2px",
-            }}
-          >
-            {formatted}
-          </Text>
-        </Stack>
-
-        <Stack align="center" gap="xs">
-          <ProfileBox /> {/* Unknown opponent */}
-        </Stack>
-      </Flex>
-
-      {/* Cancel button */}
-      <Button
-        size="xl"
-        radius="sm"
-        variant="filled"
-        color="yellow"
-        mt="xl"
-        style={{ fontWeight: "bold" }}
-        onClick={handleLeaveQueue}
-        loading={leaveQueueMutation.isPending}
-      >
-        Cancel
-      </Button>
-    </Flex>
-  );
+  // Loading state while getting user
+  return null;
 }

@@ -45,7 +45,7 @@ export default function Matchmaking({ user, seconds, handleLeaveQueue, leaveQueu
       {/* Profile Row */}
       <Flex align="center" justify="center" gap="xl">
         <Stack align="center" gap="xs">
-          <ProfileBox username={user?.leetcode_username} rating={1500} />
+          <ProfileBox username={user?.leetcode_username} rating={user?.user_elo} />
         </Stack>
 
         <Stack align="center" gap="xs">

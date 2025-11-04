@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Flex, Stack, Title, Text, Button, Loader } from "@mantine/core";
+import { useRouter } from "next/navigation";
 import Navbar from "../navbar";
 import { ProfileBox } from "../profilebox";
 import { orbitron, montserrat } from "@/app/fonts";
-import { useRandomQuestion } from "@/utils/leetcode";
+import { useSubmitSolution, useMatchStatus } from "@/lib/api/queries/matchmaking";
 
 interface MatchFoundProps {
   match: {
@@ -11,8 +12,9 @@ interface MatchFoundProps {
     opponent: string;
     opponent_elo: number;
     problem: {
+      acceptance_rate: string
       title: string;
-      titleSlug: string;
+      slug: string;
       difficulty: string;
       content: string;
     };
@@ -24,7 +26,13 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
   const [countdown, setCountdown] = useState(3);
   const [seconds, setSeconds] = useState(0);
   const [started, setStarted] = useState(false);
+  const [matchCompleted, setMatchCompleted] = useState(false);
   
+  const router = useRouter();
+  const submitSolutionMutation = useSubmitSolution();
+  
+  // Poll for match completion (in case opponent submits)
+  const { data: matchStatus } = useMatchStatus(user.id, started && !matchCompleted);
   // handle countdown first
   useEffect(() => {
     if (countdown > 0) {
@@ -43,19 +51,54 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
   
   // match timer (only runs after countdown ends)
   useEffect(() => {
-    if (started) {
+    if (started && !matchCompleted) {
       const interval = setInterval(() => {
         setSeconds((prev) => prev + 1);
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [started]);
+  }, [started, matchCompleted]);
+
+  // Check for match completion
+  useEffect(() => {
+    if (matchStatus?.status === "completed" && !matchCompleted) {
+      setMatchCompleted(true);
+      
+      // Redirect to existing results page after a short delay
+      setTimeout(() => {
+        router.push(`/match-result/${match.match_id}`);
+      }, 2000);
+    }
+  }, [matchStatus, matchCompleted, router, match.match_id]);
+
+  // Handle submit solution
+  const handleSubmit = async () => {
+    try {
+      await submitSolutionMutation.mutateAsync({
+        matchId: match.match_id,
+        userId: user.id
+      });
+      setMatchCompleted(true);
+      
+      // Redirect to existing results page after short delay
+      setTimeout(() => {
+        router.push(`/match-result/${match.match_id}`);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to submit solution:", error);
+    }
+  };
+
+  // Handle resignation
+  const handleResign = () => {
+    // TODO: Implement resignation logic
+    router.push(`/match-result/${match.match_id}`);
+  };
   
 
   const problem = match.problem;
   console.log(problem);
-  const difficulty = problem.difficulty;
-  const link = `https://leetcode.com/problems/${problem.titleSlug}`;
+  const link = `https://leetcode.com/problems/${problem.slug}`;
 
 
 
@@ -66,7 +109,9 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
 
   // what to display in timer spot
   let displayText;
-  if (!started) {
+  if (matchCompleted) {
+    displayText = "MATCH COMPLETED";
+  } else if (!started) {
     displayText = countdown > 0 ? countdown : "START!";
   } else {
     displayText = formatted;
@@ -95,7 +140,7 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
 
       {/* Players row */}
       <Flex align="center" justify="center" gap="6rem">
-        <ProfileBox username={user.leetcode_username || "User 1"} rating={user.elo || 1500} />
+        <ProfileBox username={user.leetcode_username || "User 1"} rating={user.user_elo} />
 
         <Text
           className={orbitron.className}
@@ -141,6 +186,9 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
             backgroundColor: "#E5E5E5",
             color: "black",
           }}
+          onClick={handleSubmit}
+          loading={submitSolutionMutation.isPending}
+          disabled={!started || matchCompleted}
         >
           Submit
         </Button>
@@ -154,6 +202,8 @@ export default function MatchFound({ match, user }: MatchFoundProps) {
             backgroundColor: "#E5E5E5",
             color: "black",
           }}
+          onClick={handleResign}
+          disabled={!started || matchCompleted}
         >
           Resign
         </Button>

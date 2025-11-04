@@ -54,12 +54,14 @@ class MatchmakingManager:
             # Create match record
             match_record = await create_match_record(db, user, opp)
             match = match_record["match"]
-            self.problem = match_record["problem"]
+            problem = match_record["problem"]
+            self.problem = problem  # Store for second player
             
             return {
                 "match_id": match.match_id,
                 "opponent": opp.email,  # Using email which maps to username
                 "opponent_elo": opp.user_elo,
+                "problem": problem  # Return problem directly for first player
             }
 
         return None
