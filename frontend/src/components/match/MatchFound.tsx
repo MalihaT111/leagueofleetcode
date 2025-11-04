@@ -12,12 +12,9 @@ interface MatchFoundProps {
     opponent: string;
     opponent_elo: number;
     problem: {
-      acceptance_rate?: string
-      title: string;
-      titleSlug?: string;
-      slug?: string;
-      difficulty: string;
-      content: string;
+      difficulty: string,
+      title: string,
+      titleSlug: string
     };
   };
   user: any;
@@ -107,7 +104,9 @@ export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
 
   const problem = match.problem;
   console.log(problem);
-  const link = `https://leetcode.com/problems/${problem.slug}`;
+  const link = `https://leetcode.com/problems/${problem.titleSlug}`;
+
+  console.log(problem.titleSlug);
 
 
 
@@ -175,7 +174,7 @@ export default function MatchFound({ match, user, onSubmit }: MatchFoundProps) {
 
       {/* Problem link */}
       <Text size="sm" style={{ fontFamily: "monospace" }}>
-        problem link: {link}
+        Problem Link: {link}
       </Text>
 
       {/* Rules */}
