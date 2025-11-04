@@ -64,10 +64,26 @@ class LeetCodeService:
             hard_solved=hard,
         )
     
+    """
+"variables":{"categorySlug":"all-code-essentials","filtersV2":{"filterCombineType":"ALL","statusFilter":{"questionStatuses":[],"operator":"IS"},"difficultyFilter":{"difficulties":[],"operator":"IS"},"languageFilter":{"languageSlugs":[],"operator":"IS"},"topicFilter":{"topicSlugs":[],"operator":"IS"},"acceptanceFilter":{},"frequencyFilter":{},"frontendIdFilter":{},"lastSubmittedFilter":{},"publishedFilter":{},"companyFilter":{"companySlugs":[],"operator":"IS"},"positionFilter":{"positionSlugs":[],"operator":"IS"},"contestPointFilter":{"contestPoints":[],"operator":"IS"},"premiumFilter":{"premiumStatus":["NOT_PREMIUM"],"operator":"IS"}},"searchKeyword":""},"operationName":"randomQuestionV2"}
+    """
+    
+    
+    
+    
     @staticmethod
     async def get_random_problem() -> Problem:
+        no_premium = {
+            "premiumFilter": {
+                "premiumStatus": [
+                "NOT_PREMIUM"
+                ],
+                "operator": "IS"
+            }
+        }
+        
         try:
-            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY)
+            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY,no_premium)
             random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
 
             if not random_slug:
