@@ -1,22 +1,29 @@
 "use client";
-import Navbar from "@/components/navbar";
-import { useEffect, useState, useRef } from "react";
-import { Flex, Stack, Title, Text, Button } from "@mantine/core";
-import { ProfileBox } from "@/components/profilebox";
-import { orbitron } from "../fonts";
-import {
-  useLeaveQueue,
-  useMatchStatus,
-  useJoinQueue,
-} from "@/lib/api/queries/matchmaking";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/utils/auth";
+import { AuthService, User } from "@/utils/auth";
+import Matchmaking from "@/components/match/Matchmaking";
+import MatchFound from "@/components/match/MatchFound";
+import { useMatchmakingWebSocket } from "@/lib/hooks/useMatchmakingWebSocket";
 
 // Type definitions for match data
+
+interface Problem {
+    id: number,
+    title: string,
+    titleSlug: string,
+    slug: string,
+    difficulty: string,
+    content: string,
+    tags: string[],
+    acceptance_rate: string
+}
+
 interface MatchData {
   match_id: number;
   opponent: string;
   opponent_elo: number;
+  problem: Problem
 }
 
 interface QueueResponse {
@@ -26,66 +33,56 @@ interface QueueResponse {
 
 export default function MatchmakingPage() {
   const [seconds, setSeconds] = useState(0);
-  const [userId, setUserId] = useState<number | null>(null);
-  const [inQueue, setInQueue] = useState(false);
-  const [matchFound, setMatchFound] = useState(false);
-  const hasJoinedQueueRef = useRef(false);
-
-  const leaveQueueMutation = useLeaveQueue();
-  const joinQueueMutation = useJoinQueue();
+  const [user, setUser] = useState<User | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
 
-  // Poll for match status when user is in queue
-  const { data: matchStatus } = useMatchStatus(
-    userId || 0,
-    inQueue && userId !== null,
-  );
+  // WebSocket hook for real-time matchmaking
+  const {
+    isConnected,
+    isInQueue,
+    matchFound,
+    matchData,
+    error,
+    joinQueue,
+    leaveQueue,
+    submitSolution,
+    resignMatch,
+    timerPhase,
+    countdown,
+    matchSeconds,
+    formattedTime
+  } = useMatchmakingWebSocket(user?.id || null, () => {
+    setIsRedirecting(true);
+  });
 
   // Get current user and join queue on component mount
   useEffect(() => {
-    if (hasJoinedQueueRef.current) return; // Prevent running multiple times
-    hasJoinedQueueRef.current = true;
-
     const getCurrentUserAndJoinQueue = async () => {
       try {
-        const user = await AuthService.getCurrentUser();
-        setUserId(user.id);
-
-        // Join queue immediately when page loads
-        const result = await joinQueueMutation.mutateAsync(user.id);
-
-        console.log("Join queue result:", result);
-
-        if (result.status === "matched" && result.match) {
-          // Immediate match found
-          console.log("Immediate match found!", result.match);
-          console.log("Navigating to /matchfound...");
-          setMatchFound(true);
-          router.push("/matchfound");
-        } else if (result.status === "queued") {
-          // Start polling for matches after a short delay
-          console.log("Added to queue, starting polling...");
-          setTimeout(() => {
-            setInQueue(true);
-          }, 1000); // Wait 1 second before starting to poll
-        } else {
-          console.error("Unexpected join queue result:", result);
-          console.log("Result status:", result.status);
-          console.log("Result match:", result.match);
+        const currentUser = await AuthService.getCurrentUser();
+        if (!currentUser) {
+          console.warn("No user found — redirecting to home...");
+          router.push("/");
+          return;
         }
+        setUser(currentUser);
       } catch (error) {
-        console.error("Failed to get current user or join queue:", error);
-        console.error(
-          "Error details:",
-          error instanceof Error ? error.message : String(error),
-        );
-        // Don't redirect to signin immediately, let user see the error
-        // router.push("/signin");
+        console.error("Failed to get current user:", error);
+        router.push("/signin");
       }
     };
 
     getCurrentUserAndJoinQueue();
-  }, []); // Empty dependency array - only run once on mount
+  }, [router]);
+
+  // Auto-join queue when user is loaded and WebSocket is connected
+  useEffect(() => {
+    if (user && isConnected && !isInQueue && !matchFound) {
+      console.log("🚀 Auto-joining queue via WebSocket");
+      joinQueue();
+    }
+  }, [user, isConnected, isInQueue, matchFound, joinQueue]);
 
   // Timer effect
   useEffect(() => {
@@ -96,119 +93,83 @@ export default function MatchmakingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check for match status updates
+  // Cleanup: WebSocket handles disconnection automatically
   useEffect(() => {
-    if (matchStatus?.status === "matched" && matchStatus.match && !matchFound) {
-      console.log("Match found via polling!", matchStatus.match);
-      setInQueue(false);
-      setMatchFound(true);
-      router.push("/matchfound");
-    }
-  }, [matchStatus, router, matchFound]);
+    const handleBeforeUnload = () => {
+      if (user?.id && isInQueue) {
+        leaveQueue();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user?.id, isInQueue, leaveQueue]);
 
   // Handle leaving queue
   const handleLeaveQueue = async () => {
-    if (!userId) return;
-
-    try {
-      await leaveQueueMutation.mutateAsync(userId);
-      setInQueue(false);
-      router.push("/"); // Navigate back to home or previous page
-    } catch (error) {
-      console.error("Failed to leave queue:", error);
-    }
+    leaveQueue();
+    router.push("/");
   };
 
-  // format as MM:SS
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  // Show error state
+  if (error) {
+    return (
+      <div style={{ padding: '20px', color: 'red' }}>
+        Error: {error}
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
 
-  return (
-    <Flex
-      h="100vh"
-      w="100%"
-      direction="column"
-      align="center"
-      justify="center"
-      bg="dark"
-      c="white"
-      gap="xl"
-    >
-      <Navbar />
-      <Title
-        style={{
-          fontSize: "70px",
-          fontStyle: "italic",
-          fontWeight: 700,
-          lineHeight: "1",
-          fontFamily: "var(--font-montserrat), sans-serif",
+  // Conditional rendering based on match status
+  // Keep showing MatchFound even during redirect phase
+  if ((matchFound || isRedirecting) && matchData && user) {
+    return (
+      <MatchFound 
+        match={{
+          match_id: matchData.match_id,
+          opponent: matchData.opponent.username,
+          opponent_elo: matchData.opponent.elo,
+          problem: {
+            title: matchData.problem.title,
+            titleSlug: matchData.problem.slug,
+            difficulty: matchData.problem.difficulty,
+          }
+        }} 
+        user={user}
+        onSubmit={() => {
+          setIsRedirecting(true);
+          submitSolution(matchData.match_id);
         }}
-        order={1}
-      >
-        MATCHMAKING
-      </Title>
+        onResign={() => {
+          setIsRedirecting(true);
+          resignMatch(matchData.match_id);
+        }}
+        timerPhase={timerPhase}
+        countdown={countdown}
+        matchSeconds={matchSeconds}
+        formattedTime={formattedTime}
+        error={error}
+      />
+    );
+  }
 
-      {/* Profile Row */}
-      <Flex align="center" justify="center" gap="xl">
-        <Stack align="center" gap="xs">
-          <ProfileBox username="Username" rating={1500} />
-        </Stack>
+  // Show matchmaking component while searching
+  if (user) {
+    return (
+      <Matchmaking
+        user={user}
+        seconds={seconds}
+        handleLeaveQueue={handleLeaveQueue}
+        isLeaving={false}
+        connectionStatus={isConnected ? 'Connected' : 'Connecting...'}
+      />
+    );
+  }
 
-        <Stack align="center" gap="xs">
-          <Text
-            style={{
-              fontSize: "30px",
-              fontStyle: "italic",
-              fontWeight: 700,
-              lineHeight: "1",
-              fontFamily: "var(--font-montserrat), sans-serif",
-            }}
-            size="sm"
-            c="dimmed"
-            ta="center"
-          >
-            finding a worthy opponent...
-          </Text>
-          <div
-            style={{
-              width: 60,
-              height: 60,
-              border: "4px solid white",
-              borderRadius: "50%",
-            }}
-          />
-          <Text
-            size="sm"
-            className={orbitron.className}
-            style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              letterSpacing: "2px",
-            }}
-          >
-            {formatted}
-          </Text>
-        </Stack>
-
-        <Stack align="center" gap="xs">
-          <ProfileBox /> {/* Unknown opponent */}
-        </Stack>
-      </Flex>
-
-      {/* Cancel button */}
-      <Button
-        size="xl"
-        radius="sm"
-        variant="filled"
-        color="yellow"
-        mt="xl"
-        style={{ fontWeight: "bold" }}
-        onClick={handleLeaveQueue}
-        loading={leaveQueueMutation.isPending}
-      >
-        Cancel
-      </Button>
-    </Flex>
-  );
+  // Loading state while getting user
+  return <div>Loading...</div>;
 }

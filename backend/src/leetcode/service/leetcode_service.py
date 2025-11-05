@@ -5,30 +5,34 @@ from src.leetcode.service.client import LeetCodeGraphQLClient
 from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResult
 from src.leetcode.enums.difficulty import DifficultyEnum
 from src.leetcode.service.graphql_queries import *
+import json
 
 class LeetCodeService:
-    BASE_URL = "https://leetcode.com/graphql"
-    
     @staticmethod
-    async def get_problems(
-        difficulty: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        limit: int = 50
-    ) -> List[Problem]:
-        filters = {}
-        if difficulty:
-            filters["difficulty"] = difficulty.upper()
-        if tags:
-            filters["tags"] = tags
-
-        variables = {"limit": limit, "filters": filters}
-        data = await LeetCodeGraphQLClient.query(GET_PROBLEMS, variables)
-        return data["problemsetQuestionList"]["questions"]
+    async def get_problem(slug: str) -> Problem:
+        data = await LeetCodeGraphQLClient.query(PROBLEM_QUERY, {"titleSlug": slug})
+        return data
     
     @staticmethod
     async def get_user_submissions(username: str):
         data = await LeetCodeGraphQLClient.query(RECENT_AC_SUBMISSIONS_QUERY, {"username": username})
-        return data["recentAcSubmissionList"]
+        return data["data"]["recentAcSubmissionList"]
+    
+    @staticmethod
+    async def get_recent_user_submission(username: str) -> Optional[UserSubmission]:
+        submissions = await LeetCodeService.get_user_submissions(username)
+        if not submissions:
+            return None
+        submission = submissions[0]
+        return UserSubmission(
+            id=submission["id"],
+            title=submission["title"],
+            titleSlug=submission["titleSlug"],
+            timestamp=submission["timestamp"],
+            lang=submission["lang"],
+            runtime=submission["runtime"],
+            memory=submission["memory"]
+        )
     
     @staticmethod
     async def get_user_stats(username: str) -> ProblemStats:
@@ -60,19 +64,49 @@ class LeetCodeService:
             hard_solved=hard,
         )
     
-    @staticmethod
-    async def sync_user_progress(user_id: int, leetcode_username: str) -> SyncResult:
-        """Sync user's LeetCode progress to database"""
-        # TODO: Implement progress synchronization
-        pass
+    """
+"variables":{"categorySlug":"all-code-essentials","filtersV2":{"filterCombineType":"ALL","statusFilter":{"questionStatuses":[],"operator":"IS"},"difficultyFilter":{"difficulties":[],"operator":"IS"},"languageFilter":{"languageSlugs":[],"operator":"IS"},"topicFilter":{"topicSlugs":[],"operator":"IS"},"acceptanceFilter":{},"frequencyFilter":{},"frontendIdFilter":{},"lastSubmittedFilter":{},"publishedFilter":{},"companyFilter":{"companySlugs":[],"operator":"IS"},"positionFilter":{"positionSlugs":[],"operator":"IS"},"contestPointFilter":{"contestPoints":[],"operator":"IS"},"premiumFilter":{"premiumStatus":["NOT_PREMIUM"],"operator":"IS"}},"searchKeyword":""},"operationName":"randomQuestionV2"}
+    """
+    
+    
+    
     
     @staticmethod
-    async def get_random_problem(difficulty: DifficultyEnum) -> Problem:
-        response = await LeetCodeService._make_graphql_request(RANDOM_QUESTION_QUERY)
+    async def get_random_problem() -> Problem:
+        no_premium = {
+            "premiumFilter": {
+                "premiumStatus": [
+                "NOT_PREMIUM"
+                ],
+                "operator": "IS"
+            }
+        }
         
-        randomSlug = response["data"]["randomQuestionV2"]["titleSlug"]
-        print(randomSlug)
+        try:
+            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY,no_premium)
+            random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
+
+            if not random_slug:
+                raise ValueError("LeetCode API returned no titleSlug")
+
+            print(f"Selected random problem: {random_slug}")
+            problem_data = await LeetCodeService.get_problem(random_slug)
+        except Exception as e:
+            print(f"Failed to fetch random problem: {e}")
+            return {"error": str(e)}
         
-        problem_response = await LeetCodeService.get_problem(randomSlug)
+        problem = problem_data["data"]["question"]
         
-        return problem_response
+        stats_data = json.loads(problem["stats"])
+
+        acceptance_rate = stats_data["acRate"]
+        
+        # return problem
+        return Problem(
+            id = problem["questionId"],
+            title = problem["title"],
+            slug = problem["titleSlug"],
+            difficulty = problem["difficulty"],
+            tags= [tag["name"] for tag in problem["topicTags"]],
+            acceptance_rate = acceptance_rate
+        )

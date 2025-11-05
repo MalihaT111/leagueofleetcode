@@ -26,3 +26,21 @@ export async function getMatchStatus(userId) {
   if (!response.ok) throw new Error("Failed to get match status");
   return await response.json();
 }
+
+export async function submitSolution(matchId, userId) {
+  const response = await fetch(`${BASE_URL}/matchmaking/submit/${matchId}/${userId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Failed to submit solution");
+  return await response.json();
+}
+
+export async function getRecentUserSubmission(username) {
+  const response = await fetch(`${BASE_URL}/api/leetcode/user/${username}/recent-submission`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Failed to get recent submission");
+  return await response.json();
+}

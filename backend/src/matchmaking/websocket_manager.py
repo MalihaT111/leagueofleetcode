@@ -1,0 +1,491 @@
+# src/matchmaking/websocket_manager.py
+import json
+import asyncio
+from typing import Dict, Set
+from fastapi import WebSocket
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from ..database.models import User
+from .manager import MatchmakingManager
+from .service import create_match_record
+import time
+
+class WebSocketManager:
+    def __init__(self):
+        # Store active connections by user_id
+        self.active_connections: Dict[int, WebSocket] = {}
+        # Store users waiting in queue
+        self.queue: Dict[int, dict] = {}  # user_id -> {elo, websocket}
+        # Store match problems by match_id
+        self.match_problems: Dict[int, dict] = {}
+        # Store match timers by match_id
+        self.match_timers: Dict[int, dict] = {}  # match_id -> {start_time, players, status}
+        self.matchmaking_manager = MatchmakingManager()
+
+    async def connect(self, websocket: WebSocket, user_id: int):
+        """Store WebSocket connection (already accepted in route)"""
+        self.active_connections[user_id] = websocket
+        print(f"🔌 User {user_id} connected via WebSocket")
+
+    def disconnect(self, user_id: int):
+        """Remove user from connections and queue"""
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+        if user_id in self.queue:
+            del self.queue[user_id]
+        print(f"🔌 User {user_id} disconnected")
+
+    async def send_to_user(self, user_id: int, message: dict):
+        """Send message to specific user"""
+        if user_id in self.active_connections:
+            try:
+                await self.active_connections[user_id].send_text(json.dumps(message))
+            except Exception as e:
+                print(f"❌ Failed to send message to user {user_id}: {e}")
+                # Remove dead connection
+                if user_id in self.active_connections:
+                    del self.active_connections[user_id]
+
+    async def join_queue(self, user_id: int, user_elo: int, db: AsyncSession):
+        """Add user to matchmaking queue"""
+        print(f"🚀 User {user_id} joining queue with ELO {user_elo}")
+        
+        # Add to queue
+        self.queue[user_id] = {
+            "elo": user_elo,
+            "websocket": self.active_connections.get(user_id)
+        }
+
+        # Send queue joined confirmation
+        await self.send_to_user(user_id, {
+            "type": "queue_joined",
+            "message": "Searching for opponent..."
+        })
+
+        # Try to find a match
+        await self.try_match_players(db)
+
+    async def leave_queue(self, user_id: int):
+        """Remove user from queue"""
+        if user_id in self.queue:
+            del self.queue[user_id]
+            await self.send_to_user(user_id, {
+                "type": "queue_left",
+                "message": "Left matchmaking queue"
+            })
+            print(f"🚪 User {user_id} left queue")
+
+    async def try_match_players(self, db: AsyncSession):
+        """Try to match players in queue"""
+        if len(self.queue) < 2:
+            return
+
+        # Get two players from queue (simple FIFO for now)
+        queue_items = list(self.queue.items())
+        
+        for i in range(len(queue_items)):
+            for j in range(i + 1, len(queue_items)):
+                user1_id, user1_data = queue_items[i]
+                user2_id, user2_data = queue_items[j]
+                
+                # Check ELO compatibility (±100)
+                elo_diff = abs(user1_data["elo"] - user2_data["elo"])
+                if elo_diff <= 100:
+                    await self.create_match(user1_id, user2_id, db)
+                    return
+
+    async def create_match(self, user1_id: int, user2_id: int, db: AsyncSession):
+        """Create a match between two users"""
+        try:
+            # Remove both from queue
+            self.queue.pop(user1_id, None)
+            self.queue.pop(user2_id, None)
+
+            # Get user data from database
+            user1_result = await db.execute(select(User).where(User.id == user1_id))
+            user1 = user1_result.scalar_one_or_none()
+            
+            user2_result = await db.execute(select(User).where(User.id == user2_id))
+            user2 = user2_result.scalar_one_or_none()
+
+            if not user1 or not user2:
+                print(f"❌ Failed to get user data for match")
+                return
+
+            # Create match record
+            match_record = await create_match_record(db, user1, user2)
+            match = match_record["match"]
+            problem = match_record["problem"]
+
+            # Store problem for this match
+            self.match_problems[match.match_id] = problem
+
+            print(f"✅ Match created: {match.match_id} between {user1.email} and {user2.email}")
+
+            # Initialize match timer
+            self.match_timers[match.match_id] = {
+                "start_time": None,  # Will be set when countdown ends
+                "players": [user1_id, user2_id],
+                "status": "countdown",  # countdown -> active -> completed
+                "countdown": 3
+            }
+
+            # Notify both players
+            match_data = {
+                "type": "match_found",
+                "match_id": match.match_id,
+                "problem": problem.dict(),
+            }
+
+            await self.send_to_user(user1_id, {
+                **match_data,
+                "opponent": {
+                    "username": user2.leetcode_username or user2.email,
+                    "elo": user2.user_elo
+                }
+            })
+
+            await self.send_to_user(user2_id, {
+                **match_data,
+                "opponent": {
+                    "username": user1.leetcode_username or user1.email,
+                    "elo": user1.user_elo
+                }
+            })
+
+            # Start countdown timer for this match
+            asyncio.create_task(self.run_match_timer(match.match_id))
+
+        except Exception as e:
+            print(f"❌ Error creating match: {e}")
+
+    async def submit_solution(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
+        """Handle solution submission with LeetCode validation"""
+        from sqlalchemy import select
+        from ..database.models import MatchHistory
+        from ..leetcode.service.leetcode_service import LeetCodeService
+
+        # Find the match
+        match_result = await db.execute(
+            select(MatchHistory).where(MatchHistory.match_id == match_id)
+        )
+        match = match_result.scalar_one_or_none()
+
+        if not match or match.elo_change != 0:
+            return False
+
+        # Get the user who submitted
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        
+        if not user or not user.leetcode_username:
+            await self.send_to_user(user_id, {
+                "type": "error",
+                "message": "LeetCode username not found. Please update your profile."
+            })
+            return False
+
+        # Get the problem for this match
+        problem = self.match_problems.get(match_id)
+        if not problem:
+            await self.send_to_user(user_id, {
+                "type": "error", 
+                "message": "Match problem not found"
+            })
+            return False
+
+        try:
+            # Check user's recent submissions
+            print(f"🔍 Checking submissions for {user.leetcode_username} on problem {problem.slug}")
+            recent_submission = await LeetCodeService.get_recent_user_submission(user.leetcode_username)
+            
+            if not recent_submission:
+                await self.send_to_user(user_id, {
+                    "type": "submission_invalid",
+                    "message": "No recent submissions found. Please submit your solution on LeetCode first."
+                })
+                return False
+            
+            # Check if the submission is for the correct problem
+            if recent_submission.titleSlug != problem.slug:
+                await self.send_to_user(user_id, {
+                    "type": "submission_invalid", 
+                    "message": f"Your recent submission is for '{recent_submission.titleSlug}', but the match problem is '{problem.slug}'. Please submit the correct problem."
+                })
+                return False
+            
+            print(f"✅ Valid submission found for {user.leetcode_username}: {recent_submission.titleSlug}")
+            
+        except Exception as e:
+            print(f"❌ Error validating submission: {e}")
+            await self.send_to_user(user_id, {
+                "type": "error",
+                "message": "Failed to validate submission. Please try again."
+            })
+            return False
+
+        # Determine winner and loser (submitting user wins)
+        if match.winner_id == user_id:
+            winner_id = match.winner_id
+            loser_id = match.loser_id
+        elif match.loser_id == user_id:
+            winner_id = match.loser_id
+            loser_id = match.winner_id
+            # Swap winner/loser in the match record
+            match.winner_id = winner_id
+            match.loser_id = loser_id
+        else:
+            return False
+
+        # Use frontend timer value if provided, otherwise calculate from server
+        if frontend_seconds > 0:
+            match.match_seconds = frontend_seconds
+            print(f"⏱️ Match {match_id} duration (from frontend): {frontend_seconds} seconds")
+        else:
+            # Fallback to server calculation
+            timer_data = self.match_timers.get(match_id)
+            if timer_data and timer_data.get("start_time"):
+                match_duration = int(time.time() - timer_data["start_time"])
+                match.match_seconds = match_duration
+                print(f"⏱️ Match {match_id} duration (server calculated): {match_duration} seconds")
+            else:
+                match.match_seconds = 0
+                print(f"⚠️ No timer data found for match {match_id}")
+
+        # Update match with problem slug and ELO changes
+        problem = self.match_problems.get(match_id)
+        if problem:
+            match.leetcode_problem = problem.slug
+
+        elo_change = 15
+        match.elo_change = elo_change
+
+        # Get runtime and memory data from the winner's submission
+        try:
+            if recent_submission:
+                # Parse runtime (remove "ms" and convert to int)
+                try:
+                    winner_runtime = int(recent_submission.runtime.replace(" ms", "").replace("ms", "")) if recent_submission.runtime else -1
+                except (ValueError, AttributeError):
+                    winner_runtime = -1
+                
+                # Parse memory (remove "MB" and convert to float)
+                try:
+                    winner_memory = float(recent_submission.memory.replace(" MB", "").replace("MB", "")) if recent_submission.memory else -1.0
+                except (ValueError, AttributeError):
+                    winner_memory = -1.0
+            else:
+                winner_runtime = -1
+                winner_memory = -1.0
+        except Exception as e:
+            print(f"Error parsing submission data: {e}")
+            winner_runtime = -1
+            winner_memory = -1.0
+
+        # Update user ELOs
+        winner_result = await db.execute(select(User).where(User.id == winner_id))
+        winner = winner_result.scalar_one_or_none()
+        loser_result = await db.execute(select(User).where(User.id == loser_id))
+        loser = loser_result.scalar_one_or_none()
+
+        if winner and loser:
+            winner.user_elo += elo_change
+            loser.user_elo -= elo_change
+            match.winner_elo = winner.user_elo
+            match.loser_elo = loser.user_elo
+
+        # Set runtime and memory data
+        match.winner_runtime = winner_runtime
+        match.loser_runtime = -1  # Loser gets -1 for runtime
+        match.winner_memory = winner_memory
+        match.loser_memory = -1.0  # Loser gets -1 for memory
+
+        await db.commit()
+
+        # Stop the timer
+        self.stop_match_timer(match_id)
+
+        # Notify both players
+        await self.send_to_user(winner_id, {
+            "type": "match_completed",
+            "result": "won",
+            "match_id": match_id,
+            "elo_change": f"+{elo_change}"
+        })
+
+        await self.send_to_user(loser_id, {
+            "type": "match_completed", 
+            "result": "lost",
+            "match_id": match_id,
+            "elo_change": f"-{elo_change}"
+        })
+
+        print(f"🏆 Match {match_id} completed. Winner: {winner_id}, Loser: {loser_id}")
+        return True
+
+    async def resign_match(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
+        """Handle match resignation"""
+        from sqlalchemy import select
+        from ..database.models import MatchHistory
+
+        # Find the match
+        match_result = await db.execute(
+            select(MatchHistory).where(MatchHistory.match_id == match_id)
+        )
+        match = match_result.scalar_one_or_none()
+
+        if not match or match.elo_change != 0:
+            return False
+
+        # Determine winner and loser (resigning user loses)
+        if match.winner_id == user_id:
+            # User was winner, now becomes loser
+            winner_id = match.loser_id
+            loser_id = match.winner_id
+            match.winner_id = winner_id
+            match.loser_id = loser_id
+        elif match.loser_id == user_id:
+            # User was loser, stays loser
+            winner_id = match.winner_id
+            loser_id = match.loser_id
+        else:
+            return False
+
+        # Use frontend timer value if provided, otherwise calculate from server
+        if frontend_seconds > 0:
+            match.match_seconds = frontend_seconds
+            print(f"⏱️ Match {match_id} resigned after (from frontend): {frontend_seconds} seconds")
+        else:
+            # Fallback to server calculation
+            timer_data = self.match_timers.get(match_id)
+            if timer_data and timer_data.get("start_time"):
+                match_duration = int(time.time() - timer_data["start_time"])
+                match.match_seconds = match_duration
+                print(f"⏱️ Match {match_id} resigned after (server calculated): {match_duration} seconds")
+            else:
+                match.match_seconds = 0
+                print(f"⚠️ No timer data found for resigned match {match_id}")
+
+        # Update match with problem slug and ELO changes
+        problem = self.match_problems.get(match_id)
+        if problem:
+            match.leetcode_problem = problem.slug
+
+        # ELO changes for resignation: winner gets +15, loser loses -10
+        winner_elo_change = 15
+        loser_elo_change = 10
+        match.elo_change = loser_elo_change
+
+        # Update user ELOs
+        winner_result = await db.execute(select(User).where(User.id == winner_id))
+        winner = winner_result.scalar_one_or_none()
+        loser_result = await db.execute(select(User).where(User.id == loser_id))
+        loser = loser_result.scalar_one_or_none()
+
+        if winner and loser:
+            winner.user_elo += winner_elo_change
+            loser.user_elo -= loser_elo_change
+            match.winner_elo = winner.user_elo
+            match.loser_elo = loser.user_elo
+
+        # Set runtime and memory data for resignation (both get -1 since no valid submission)
+        match.winner_runtime = -1
+        match.loser_runtime = -1
+        match.winner_memory = -1.0
+        match.loser_memory = -1.0
+
+        await db.commit()
+
+        # Notify both players
+        await self.send_to_user(winner_id, {
+            "type": "match_completed",
+            "result": "won",
+            "match_id": match_id,
+            "elo_change": f"+{winner_elo_change}",
+            "reason": "opponent_resigned"
+        })
+
+        await self.send_to_user(loser_id, {
+            "type": "match_completed", 
+            "result": "lost",
+            "match_id": match_id,
+            "elo_change": f"-{loser_elo_change}",
+            "reason": "resigned"
+        })
+
+        print(f"🏳️ Match {match_id} ended by resignation. Winner: {winner_id}, Loser: {loser_id}")
+        
+        # Stop the timer for this match
+        if match_id in self.match_timers:
+            self.match_timers[match_id]["status"] = "completed"
+        
+        return True
+
+    async def run_match_timer(self, match_id: int):
+        """Run the synchronized timer for a match"""
+        if match_id not in self.match_timers:
+            return
+
+        timer_data = self.match_timers[match_id]
+        players = timer_data["players"]
+
+        try:
+            # Countdown phase (3, 2, 1)
+            for countdown in [3, 2, 1]:
+                if timer_data["status"] != "countdown":
+                    return
+                
+                # Send countdown to both players
+                for player_id in players:
+                    await self.send_to_user(player_id, {
+                        "type": "timer_update",
+                        "phase": "countdown",
+                        "countdown": countdown
+                    })
+                
+                await asyncio.sleep(1)
+
+            # Send "START!" message
+            for player_id in players:
+                await self.send_to_user(player_id, {
+                    "type": "timer_update",
+                    "phase": "start",
+                    "message": "START!"
+                })
+            
+            await asyncio.sleep(1)
+
+            # Start match timer
+            timer_data["status"] = "active"
+            timer_data["start_time"] = time.time()
+            match_seconds = 0
+
+            # Active match timer - send start time instead of continuous updates
+            start_timestamp = timer_data["start_time"]
+            
+            # Send match start time to both players for client-side calculation
+            for player_id in players:
+                await self.send_to_user(player_id, {
+                    "type": "timer_update",
+                    "phase": "active",
+                    "start_timestamp": start_timestamp
+                })
+            
+            # Keep timer alive but don't send continuous updates
+            while timer_data["status"] == "active":
+                await asyncio.sleep(5)  # Check every 5 seconds instead of every second
+
+        except Exception as e:
+            print(f"❌ Timer error for match {match_id}: {e}")
+        finally:
+            # Clean up timer data
+            if match_id in self.match_timers:
+                del self.match_timers[match_id]
+
+    def stop_match_timer(self, match_id: int):
+        """Stop the timer for a match"""
+        if match_id in self.match_timers:
+            self.match_timers[match_id]["status"] = "completed"
+
+# Global WebSocket manager instance
+websocket_manager = WebSocketManager()

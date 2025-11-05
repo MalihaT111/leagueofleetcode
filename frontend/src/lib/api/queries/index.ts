@@ -6,26 +6,18 @@ export interface MatchResultData {
   winner: {
     id: number;
     username: string;
-    elo_before: number;
-    elo_after: number;
-    elo_change: number;
+    elo: number;
     runtime: number; // in milliseconds
     memory: number; // in MB
   };
   loser: {
     id: number;
     username: string;
-    elo_before: number;
-    elo_after: number;
-    elo_change: number;
+    elo: number;
     runtime: number; // in milliseconds
     memory: number; // in MB
   };
-  problem: {
-    slug: string;
-    title: string;
-    url: string;
-  };
+  problem: string; // problem slug
   match_duration: number; // in seconds
   elo_change: number;
 }
@@ -41,7 +33,7 @@ export const useMatchResults = (matchId: number) => {
 
 async function fetchMatchResults(matchId: number): Promise<MatchResultData> {
   const response = await fetch(
-    `http://localhost:8000/api/match-result/${matchId}`,
+    `http://127.0.0.1:8000/matchmaking/result/${matchId}`,
     {
       method: "GET",
     },

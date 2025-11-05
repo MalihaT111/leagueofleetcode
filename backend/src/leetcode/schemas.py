@@ -8,19 +8,16 @@ class Problem(BaseModel):
     slug: str
     difficulty: str
     tags: List[str]
-    acceptance_rate: float
-    is_premium: bool
-    content: Optional[str] = None
+    acceptance_rate: str
 
 class UserSubmission(BaseModel):
     id: int
-    problem_id: int
-    problem_title: str
-    status: str
-    runtime: Optional[str] = None
-    memory: Optional[str] = None
-    language: str
-    submitted_at: datetime
+    title: str
+    titleSlug: str
+    timestamp: int
+    lang: str
+    runtime: str
+    memory: str
 
 class ProblemStats(BaseModel):
     total_solved: int

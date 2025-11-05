@@ -7,6 +7,7 @@ from ..database.models import User, MatchHistory
 from ..matchmaking.manager import MatchmakingManager
 from ..matchmaking.manager import MATCHMAKING_KEY
 from ..matchmaking.schemas import QueueResponse, MatchResponse
+from ..leetcode.schemas import Problem
 
 router = APIRouter(tags=["Matchmaking"])
 manager = MatchmakingManager()
@@ -18,16 +19,27 @@ async def join_queue(user_id: int, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    print(f"🚀 User {user_id} ({user.email}) joining queue with ELO {user.user_elo}")
+    
+    # First, remove user from queue if they're already there (cleanup)
+    await manager.remove_player(user.id)
+    
+    # Add player to queue
     await manager.add_player(user.id, user.user_elo)
 
     match = await manager.find_match(user.id, user.user_elo, db)
     if match:
+        print(f"🎉 Immediate match found for user {user_id}")
+        problem = match.get("problem")
         match_response = MatchResponse(
             match_id=match["match_id"],
             opponent=match["opponent"],
-            opponent_elo=match["opponent_elo"]
+            opponent_elo=match["opponent_elo"],
+            problem=problem.dict() if problem else {}
         )
         return QueueResponse(status="matched", match=match_response)
+    
+    print(f"⏳ User {user_id} added to queue, waiting for opponent")
     return QueueResponse(status="queued", match=None)
 
 @router.post("/leave/{user_id}")
@@ -64,7 +76,19 @@ async def get_match_status(user_id: int, db: AsyncSession = Depends(get_db)):
     match = recent_match_result.scalar_one_or_none()
     
     if match:
-        # Determine opponent
+        # Check if match is completed (elo_change != 0 means completed)
+        if match.elo_change != 0:
+            # Match is completed, determine if user won or lost
+            user_won = match.winner_id == user_id
+            return QueueResponse(status="completed", match=MatchResponse(
+                match_id=match.match_id,
+                opponent="",  # Not needed for completed status
+                opponent_elo=0,
+                problem=manager.problem.dict() if manager.problem else Problem(),
+                result="won" if user_won else "lost"
+            ))
+        
+        # Match is still active
         opponent_id = match.loser_id if match.winner_id == user_id else match.winner_id
         opponent_result = await db.execute(select(User).where(User.id == opponent_id))
         opponent = opponent_result.scalar_one_or_none()
@@ -75,8 +99,228 @@ async def get_match_status(user_id: int, db: AsyncSession = Depends(get_db)):
                 match=MatchResponse(
                     match_id=match.match_id,
                     opponent=opponent.email,
-                    opponent_elo=opponent.user_elo
+                    opponent_elo=opponent.user_elo,
+                    problem=manager.problem.dict() if manager.problem else {}
                 )
             )
     
     return QueueResponse(status="waiting", match=None)
+
+@router.post("/submit/{match_id}/{user_id}")
+async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depends(get_db)):
+    """Handle when a user submits their solution and wins the match"""
+    
+    # Find the match
+    match_result = await db.execute(
+        select(MatchHistory).where(MatchHistory.match_id == match_id)
+    )
+    match = match_result.scalar_one_or_none()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    # Check if match is already completed
+    if match.elo_change != 0:
+        raise HTTPException(status_code=400, detail="Match already completed")
+    
+    # Determine winner and loser
+    if match.winner_id == user_id:
+        winner_id = match.winner_id
+        loser_id = match.loser_id
+    elif match.loser_id == user_id:
+        winner_id = match.loser_id
+        loser_id = match.winner_id
+        # Swap winner/loser in the match record
+        match.winner_id = winner_id
+        match.loser_id = loser_id
+    else:
+        raise HTTPException(status_code=400, detail="User not in this match")
+    
+    # Get winner's LeetCode username to fetch submission data
+    winner_result = await db.execute(select(User).where(User.id == winner_id))
+    winner = winner_result.scalar_one_or_none()
+    loser_result = await db.execute(select(User).where(User.id == loser_id))
+    loser = loser_result.scalar_one_or_none()
+    
+    if not winner or not loser:
+        raise HTTPException(status_code=404, detail="Player data not found")
+    
+    # Get winner's recent submission for runtime and memory data
+    from ..leetcode.service.leetcode_service import LeetCodeService
+    try:
+        if winner.leetcode_username:
+            recent_submission = await LeetCodeService.get_recent_user_submission(winner.leetcode_username)
+            if recent_submission:
+                # Parse runtime (remove "ms" and convert to int)
+                try:
+                    winner_runtime = int(recent_submission.runtime.replace(" ms", "").replace("ms", "")) if recent_submission.runtime else -1
+                except (ValueError, AttributeError):
+                    winner_runtime = -1
+                
+                # Parse memory (remove "MB" and convert to float)
+                try:
+                    winner_memory = float(recent_submission.memory.replace(" MB", "").replace("MB", "")) if recent_submission.memory else -1.0
+                except (ValueError, AttributeError):
+                    winner_memory = -1.0
+            else:
+                winner_runtime = -1
+                winner_memory = -1.0
+        else:
+            winner_runtime = -1
+            winner_memory = -1.0
+    except Exception as e:
+        print(f"Error getting winner submission data: {e}")
+        winner_runtime = -1
+        winner_memory = -1.0
+    
+    # Set match duration (fallback - WebSocket should handle this)
+    match.match_seconds = 0  # Default for REST API submissions
+    
+    # Calculate ELO changes (simple +15/-15 for now)
+    elo_change = 15
+    match.elo_change = elo_change
+    
+    # Update user ELOs and submission data
+    winner.user_elo += elo_change
+    loser.user_elo -= elo_change
+    match.winner_elo = winner.user_elo
+    match.loser_elo = loser.user_elo
+    
+    # Set runtime and memory data
+    match.winner_runtime = winner_runtime
+    match.loser_runtime = -1  # Loser gets -1 for runtime
+    match.winner_memory = winner_memory
+    match.loser_memory = -1.0  # Loser gets -1 for memory
+    
+    await db.commit()
+    
+    return {"status": "completed", "winner_id": winner_id, "elo_change": elo_change}
+
+@router.post("/resign/{match_id}/{user_id}")
+async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(get_db)):
+    """Handle when a user resigns from a match"""
+    
+    # Find the match
+    match_result = await db.execute(
+        select(MatchHistory).where(MatchHistory.match_id == match_id)
+    )
+    match = match_result.scalar_one_or_none()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    # Check if match is already completed
+    if match.elo_change != 0:
+        raise HTTPException(status_code=400, detail="Match already completed")
+    
+    # Determine winner and loser (resigning user loses)
+    if match.winner_id == user_id:
+        # User was winner, now becomes loser
+        winner_id = match.loser_id
+        loser_id = match.winner_id
+        match.winner_id = winner_id
+        match.loser_id = loser_id
+    elif match.loser_id == user_id:
+        # User was loser, stays loser
+        winner_id = match.winner_id
+        loser_id = match.loser_id
+    else:
+        raise HTTPException(status_code=400, detail="User not in this match")
+    
+    # Get the problem for this match and update the leetcode_problem field
+    problem = manager.get_problem_for_match(match_id)
+    if problem:
+        try:
+            problem_slug = problem.slug if hasattr(problem, 'slug') else str(problem.get('slug', 'unknown'))
+            match.leetcode_problem = problem_slug
+            print(f"📝 Updated resigned match {match_id} with problem slug: {problem_slug}")
+        except Exception as e:
+            print(f"⚠️ Error getting problem slug for resigned match {match_id}: {e}")
+            match.leetcode_problem = "unknown"
+    else:
+        print(f"⚠️ Warning: No problem found for resigned match {match_id}")
+        match.leetcode_problem = "unknown"
+    
+    # Set match duration (fallback - WebSocket should handle this)
+    match.match_seconds = 0  # Default for REST API resignations
+    
+    # ELO changes for resignation: winner gets +15, loser loses -10
+    winner_elo_change = 15
+    loser_elo_change = 10  # Resigning user loses 10 ELO
+    match.elo_change = loser_elo_change  # Store the loser's penalty
+    
+    # Update user ELOs
+    winner_result = await db.execute(select(User).where(User.id == winner_id))
+    winner = winner_result.scalar_one_or_none()
+    loser_result = await db.execute(select(User).where(User.id == loser_id))
+    loser = loser_result.scalar_one_or_none()
+    
+    if winner and loser:
+        winner.user_elo += winner_elo_change
+        loser.user_elo -= loser_elo_change
+        match.winner_elo = winner.user_elo
+        match.loser_elo = loser.user_elo
+    
+    # Set runtime and memory data for resignation (both get -1 since no valid submission)
+    match.winner_runtime = -1
+    match.loser_runtime = -1
+    match.winner_memory = -1.0
+    match.loser_memory = -1.0
+    
+    await db.commit()
+    
+    return {
+        "status": "completed", 
+        "winner_id": winner_id, 
+        "loser_id": loser_id,
+        "resignation": True,
+        "winner_elo_change": winner_elo_change,
+        "loser_elo_change": loser_elo_change
+    }
+
+@router.get("/result/{match_id}")
+async def get_match_result(match_id: int, db: AsyncSession = Depends(get_db)):
+    """Get the result of a completed match"""
+    
+    # Find the match
+    match_result = await db.execute(
+        select(MatchHistory).where(MatchHistory.match_id == match_id)
+    )
+    match = match_result.scalar_one_or_none()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    if match.elo_change == 0:
+        raise HTTPException(status_code=400, detail="Match not completed yet")
+    
+    # Get winner and loser info
+    winner_result = await db.execute(select(User).where(User.id == match.winner_id))
+    winner = winner_result.scalar_one_or_none()
+    
+    loser_result = await db.execute(select(User).where(User.id == match.loser_id))
+    loser = loser_result.scalar_one_or_none()
+    
+    if not winner or not loser:
+        raise HTTPException(status_code=404, detail="Player data not found")
+    
+    return {
+        "match_id": match.match_id,
+        "winner": {
+            "id": winner.id,
+            "username": winner.leetcode_username or winner.email,
+            "elo": match.winner_elo,
+            "runtime": match.winner_runtime,
+            "memory": match.winner_memory
+        },
+        "loser": {
+            "id": loser.id,
+            "username": loser.leetcode_username or loser.email,
+            "elo": match.loser_elo,
+            "runtime": match.loser_runtime,
+            "memory": match.loser_memory
+        },
+        "elo_change": match.elo_change,
+        "problem": match.leetcode_problem,
+        "match_duration": match.match_seconds
+    }

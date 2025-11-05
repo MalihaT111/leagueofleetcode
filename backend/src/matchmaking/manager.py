@@ -9,6 +9,8 @@ MATCHMAKING_KEY = "matchmaking_queue"
 REDIS_URL = "redis://localhost:6379"  # Use Elasticache endpoint in production
 
 class MatchmakingManager:
+    problem = None
+    
     def __init__(self):
         self.redis_client = None  # Use redis.asyncio client
 
@@ -50,11 +52,16 @@ class MatchmakingManager:
                 continue
 
             # Create match record
-            match = await create_match_record(db, user, opp)
+            match_record = await create_match_record(db, user, opp)
+            match = match_record["match"]
+            problem = match_record["problem"]
+            self.problem = problem  # Store for second player
+            
             return {
                 "match_id": match.match_id,
                 "opponent": opp.email,  # Using email which maps to username
-                "opponent_elo": opp.user_elo
+                "opponent_elo": opp.user_elo,
+                "problem": problem  # Return problem directly for first player
             }
 
         return None

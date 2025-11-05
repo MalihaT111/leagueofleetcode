@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { joinQueue, leaveQueue, getMatchStatus } from "../matchmaking";
+import { joinQueue, leaveQueue, getMatchStatus, submitSolution, getRecentUserSubmission } from "../matchmaking";
 
 export const useJoinQueue = () => {
   return useMutation({
@@ -20,5 +20,21 @@ export const useMatchStatus = (userId: number, enabled: boolean = false) => {
     enabled: enabled, // Only run when enabled
     refetchInterval: enabled ? 2000 : false, // Poll every 2 seconds when enabled
     refetchIntervalInBackground: true,
+  });
+};
+
+export const useSubmitSolution = () => {
+  return useMutation({
+    mutationFn: ({ matchId, userId }: { matchId: number; userId: number }) => 
+      submitSolution(matchId, userId),
+  });
+};
+
+export const useRecentUserSubmission = (username: string, enabled: boolean = false) => {
+  return useQuery({
+    queryKey: ["recentSubmission", username],
+    queryFn: () => getRecentUserSubmission(username),
+    enabled: enabled && !!username,
+    refetchOnWindowFocus: false,
   });
 };

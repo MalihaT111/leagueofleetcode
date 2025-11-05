@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from src.database.database import init_db
 from src.matchmaking.routes import router as matchmaking_router
+from src.matchmaking.websocket_routes import router as websocket_router
 from src.results.routes import router as result_router
 from src.history.routes import router as matchhistory_router
 from src.users import routes as user_routes
@@ -11,7 +12,7 @@ from src.auth.auth import auth_router, register_router, current_user
 from src.database.models import User
 from src.profile.routes import router as profile_router
 from src.settings.routes import router as settings_router
-# from src.leetcode.routes import router as leetcode_router  # Uncomment if you actually have it
+from src.leetcode.routes import router as leetcode_router
 
 # --- Lifespan event (startup/shutdown) ---
 @asynccontextmanager
@@ -36,6 +37,7 @@ app.add_middleware(
 
 # --- Routers ---
 app.include_router(matchmaking_router, prefix="/matchmaking", tags=["Matchmaking"])
+app.include_router(websocket_router, prefix="/matchmaking", tags=["WebSocket"])
 app.include_router(result_router, prefix="/api", tags=["Match Results"])
 app.include_router(user_routes.router, prefix="/api", tags=["user"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -43,7 +45,7 @@ app.include_router(register_router, prefix="/auth", tags=["auth"])
 app.include_router(matchhistory_router, prefix="/api", tags=["history"])
 app.include_router(profile_router)
 app.include_router(settings_router, prefix="/api", tags=["settings"])
-# app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])  # Uncomment only if exists
+app.include_router(leetcode_router, prefix="/api", tags=["leetcode"])
 
 # --- Root Health Check ---
 @app.get("/")

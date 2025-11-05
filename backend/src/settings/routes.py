@@ -5,7 +5,7 @@ from src.settings.service import get_settings_data, update_settings_data
 from src.settings.schemas import UserSettingsOut, UpdateUserSettings
 
 
-router = APIRouter(prefix="/settings", tags=["Settings"])
+router = APIRouter(prefix="/settings", tags=["settings"])
 
 @router.get("/{user_id}", response_model=UserSettingsOut)
 async def get_settings(user_id: int, db: AsyncSession = Depends(get_db)):
