@@ -33,8 +33,8 @@ export default function FilterTypesCard({ userId = 1 }: { userId?: number }) {
     "Array",
     "String",
     "Hash Table",
-    "Dynamic Programming",
     "Math",
+    "Dynamic Programming",
     "Sorting",
     "Greedy",
     "Depth-First Search",
@@ -102,6 +102,7 @@ export default function FilterTypesCard({ userId = 1 }: { userId?: number }) {
     "Rejection Sampling",
     "Biconnected Component",
   ];
+  
 
   // 🔎 Filtered list based on search term
   const filtered = filters.filter((f) =>

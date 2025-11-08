@@ -72,41 +72,62 @@ class LeetCodeService:
     
     
     @staticmethod
-    async def get_random_problem() -> Problem:
-        no_premium = {
-            "premiumFilter": {
-                "premiumStatus": [
-                "NOT_PREMIUM"
-                ],
+    async def get_random_problem(
+        topics: Optional[list[str]] = None,
+        difficulty: Optional[list[str]] = None
+    ) -> Problem:
+        """
+        Fetch a random LeetCode problem filtered only by topic(s) and difficulty.
+        Skips premium problems and ignores all other filters.
+        """
+
+        # Build the GraphQL filter structure
+        filters = {
+            "filterCombineType": "ALL",
+            "topicFilter": {
+                "topicSlugs": topics or [],
                 "operator": "IS"
-            }
+            },
+            "difficultyFilter": {
+                "difficulties": [str(d).upper() for d in difficulty] if difficulty else [],
+                "operator": "IS"
+            },
+            "premiumFilter": {
+                "premiumStatus": ["NOT_PREMIUM"],
+                "operator": "IS"
+            },
         }
-        
+
+        variables = {
+            "categorySlug": "all-code-essentials",
+            "filtersV2": filters,
+            "searchKeyword": ""
+        }
+
         try:
-            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY,no_premium)
+            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY, variables)
             random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
 
             if not random_slug:
                 raise ValueError("LeetCode API returned no titleSlug")
 
-            print(f"Selected random problem: {random_slug}")
-            problem_data = await LeetCodeService.get_problem(random_slug)
-        except Exception as e:
-            print(f"Failed to fetch random problem: {e}")
-            return {"error": str(e)}
-        
-        problem = problem_data["data"]["question"]
-        
-        stats_data = json.loads(problem["stats"])
+            print(f"🎯 Selected random problem: {random_slug}")
 
-        acceptance_rate = stats_data["acRate"]
-        
-        # return problem
-        return Problem(
-            id = problem["questionId"],
-            title = problem["title"],
-            slug = problem["titleSlug"],
-            difficulty = problem["difficulty"],
-            tags= [tag["name"] for tag in problem["topicTags"]],
-            acceptance_rate = acceptance_rate
-        )
+            problem_data = await LeetCodeService.get_problem(random_slug)
+            problem = problem_data["data"]["question"]
+
+            stats_data = json.loads(problem["stats"])
+            acceptance_rate = stats_data.get("acRate")
+
+            return Problem(
+                id=problem["questionId"],
+                title=problem["title"],
+                slug=problem["titleSlug"],
+                difficulty=problem["difficulty"],
+                tags=[tag["name"] for tag in problem["topicTags"]],
+                acceptance_rate=acceptance_rate
+            )
+
+        except Exception as e:
+            print(f"⚠️ Failed to fetch random problem: {e}")
+            return {"error": str(e)}
