@@ -59,6 +59,15 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     def password_hash(self, value):
         self.hashed_password = value
 
+class Friends(Base):
+    __tablename__ = "friends"
+    
+    user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, nullable=False)
+    current_friends = Column(MutableList.as_mutable(JSON), default=list, nullable=False)
+    friend_requests_sent = Column(MutableList.as_mutable(JSON), default=list, nullable=False)
+    friend_requests_received = Column(MutableList.as_mutable(JSON), default=list, nullable=False)
+
+
 class MatchHistory(Base):
     __tablename__ = "match_history"
 
