@@ -9,6 +9,7 @@ from src.results.routes import router as result_router
 from src.history.routes import router as matchhistory_router
 from src.users import routes as user_routes
 from src.auth.auth import auth_router, register_router, current_user
+from src.auth.registration_routes import router as custom_registration_router
 from src.database.models import User
 from src.profile.routes import router as profile_router
 from src.settings.routes import router as settings_router
@@ -42,7 +43,8 @@ app.include_router(websocket_router, prefix="/matchmaking", tags=["WebSocket"])
 app.include_router(result_router, prefix="/api", tags=["Match Results"])
 app.include_router(user_routes.router, prefix="/api", tags=["user"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(register_router, prefix="/auth", tags=["auth"])
+app.include_router(custom_registration_router, prefix="/auth", tags=["auth"])
+# app.include_router(register_router, prefix="/auth", tags=["auth"])  # Disabled in favor of custom registration
 app.include_router(matchhistory_router, prefix="/api", tags=["history"])
 app.include_router(profile_router)
 app.include_router(settings_router, prefix="/api", tags=["settings"])
@@ -61,6 +63,7 @@ async def get_profile(user: User = Depends(current_user)):
         "id": user.id,
         "email": user.email,
         "leetcode_username": user.leetcode_username,
+        "leetcode_hash": user.leetcode_hash,
         "user_elo": user.user_elo,
         "is_active": user.is_active,
         "is_verified": user.is_verified,
