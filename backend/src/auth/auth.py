@@ -4,6 +4,7 @@ Everything you need for auth in one file.
 """
 
 import os
+import secrets
 from typing import Optional
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
