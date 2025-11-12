@@ -53,7 +53,7 @@ class UserRead(schemas.BaseUser[int]):
 
 class UserCreate(schemas.BaseUserCreate):
     """Schema for creating users - requires your essential fields."""
-    leetcode_username: str  # Required field
+    leetcode_username: Optional[str] = None  # Now optional - will be set later
     user_elo: Optional[int] = None  # Let database default handle this
     difficulty: Optional[List[str]] = None  # Let database default handle this
     topics: Optional[List[str]] = None  # Let database default handle this

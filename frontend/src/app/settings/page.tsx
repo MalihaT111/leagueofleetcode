@@ -18,11 +18,15 @@ export default function SettingsPage() {
     const fetchUser = async () => {
       try {
         const user = await AuthService.getCurrentUser();
-        if (user?.leetcode_username) {
-          setUserId(user.id);
-        } else {
+        if (!user) {
           console.warn("No user found — redirecting to signin...");
           router.push("/signin");
+        } else if (!user.leetcode_username) {
+          // This shouldn't happen with new registration flow, but handle it
+          console.warn("LeetCode username not set — user account incomplete");
+          router.push("/signin");
+        } else {
+          setUserId(user.id);
         }
       } catch (error) {
         console.error("Error fetching current user:", error);

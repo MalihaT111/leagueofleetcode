@@ -24,6 +24,17 @@ export interface RegisterData {
   repeating_questions?: string;
 }
 
+export interface InitialRegistrationResponse {
+  message: string;
+  leetcode_hash: string;
+  email: string;
+}
+
+export interface CompleteRegistrationData {
+  email: string;
+  leetcode_username: string;
+}
+
 export class AuthService {
   private static readonly TOKEN_KEY = "access_token";
   private static readonly API_BASE_URL =
@@ -100,7 +111,7 @@ export class AuthService {
       body: JSON.stringify({
         email: registerData.email,
         password: registerData.password,
-        leetcode_username: registerData.leetcode_username,
+        leetcode_username: registerData.leetcode_username || null,
         user_elo: registerData.user_elo || 1200,
         difficulty: registerData.difficulty || null,
         topics: registerData.topics || null,
@@ -126,6 +137,80 @@ export class AuthService {
         errorMessage = response.statusText || errorMessage;
       }
       throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  static async initiateRegistration(
+    email: string,
+    password: string
+  ): Promise<InitialRegistrationResponse> {
+    const response = await fetch(`${this.API_BASE_URL}/auth/register/init`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Registration failed";
+      try {
+        const error = await response.json();
+        if (error.detail) {
+          errorMessage =
+            typeof error.detail === "string" ? error.detail : "Registration failed";
+        }
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  static async completeRegistration(
+    data: CompleteRegistrationData
+  ): Promise<{ message: string; user_id: number; email: string; leetcode_username: string }> {
+    const response = await fetch(`${this.API_BASE_URL}/auth/register/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to complete registration";
+      try {
+        const error = await response.json();
+        if (error.detail) {
+          errorMessage =
+            typeof error.detail === "string" ? error.detail : errorMessage;
+        }
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  static async checkRegistrationStatus(
+    email: string
+  ): Promise<{ status: string; leetcode_hash?: string; email?: string }> {
+    const response = await fetch(
+      `${this.API_BASE_URL}/auth/register/status/${encodeURIComponent(email)}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to check registration status");
     }
 
     return response.json();
