@@ -1,0 +1,145 @@
+{
+  "info": {
+    "name": "Friends System API",
+    "description": "Complete collection of Friends System endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Search Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/search?query=user",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "search"],
+          "query": [
+            {
+              "key": "query",
+              "value": "user",
+              "description": "Search term (min 2 characters)"
+            }
+          ]
+        },
+        "description": "Search for users by username or leetcode_username"
+      }
+    },
+    {
+      "name": "2. Send Friend Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"target_user_id\": 2\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/send",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "send"]
+        },
+        "description": "Send a friend request from user 1 to user 2"
+      }
+    },
+    {
+      "name": "3. Get Friend Requests",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/requests",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "requests"]
+        },
+        "description": "Get sent and received friend requests for user 1"
+      }
+    },
+    {
+      "name": "4. Accept Friend Request",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/2/accept/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "2", "accept", "1"]
+        },
+        "description": "User 2 accepts friend request from user 1"
+      }
+    },
+    {
+      "name": "5. Get Friends List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/list",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "list"]
+        },
+        "description": "Get list of friends for user 1"
+      }
+    },
+    {
+      "name": "6. Decline Friend Request",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/decline/3",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "decline", "3"]
+        },
+        "description": "User 1 declines friend request from user 3"
+      }
+    },
+    {
+      "name": "7. Cancel Friend Request",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/cancel/3",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "cancel", "3"]
+        },
+        "description": "User 1 cancels sent friend request to user 3"
+      }
+    },
+    {
+      "name": "8. Remove Friend",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/friends/1/remove/2",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "friends", "1", "remove", "2"]
+        },
+        "description": "User 1 removes user 2 from friends"
+      }
+    }
+  ]
+}

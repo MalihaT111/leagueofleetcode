@@ -63,6 +63,7 @@ export default function Home() {
 
             <Stack mt="xl" gap="xl">
               <AngledButton href="/match" label="Start" />
+              <AngledButton href="/friends" label="Friends" />
               <AngledButton href="/settings" label="Settings" />
             </Stack>
           </Stack>
