@@ -15,6 +15,7 @@ from src.auth.temp_registration import (
     delete_temp_registration
 )
 from src.auth.auth import password_helper
+from src.leetcode.service.leetcode_service import LeetCodeService
 
 router = APIRouter()
 
@@ -106,9 +107,26 @@ async def complete_registration(
             detail="This LeetCode username is already linked to another account"
         )
     
-    # TODO: Verify that the user has added the hash to their LeetCode profile
-    # This would require calling LeetCode API to fetch user profile
-    # For now, we'll trust the user has done this
+    # Verify that the user has added the hash to their LeetCode profile
+    try:
+        profile = await LeetCodeService.get_user_profile_summary(data.leetcode_username)
+        about_me = profile.get("aboutMe", "")
+        
+        # Check if the verification hash is in the user's bio
+        if temp_reg.leetcode_hash not in about_me:
+            raise HTTPException(
+                status_code=400,
+                detail="Verification hash not found in your LeetCode profile bio. Please add the hash to your profile and try again."
+            )
+    except HTTPException as e:
+        # Re-raise our custom exceptions
+        raise e
+    except Exception as e:
+        # Handle LeetCode API errors
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to verify LeetCode profile: {str(e)}"
+        )
     
     # Create the actual user in database
     new_user = User(
