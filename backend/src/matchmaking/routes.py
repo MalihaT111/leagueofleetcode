@@ -208,8 +208,10 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
         is_resignation=False
     )
     
-    # Store the absolute value of loser's change (for historical compatibility)
-    match.elo_change = abs(loser_elo_change)
+    # Store all ELO changes accurately
+    match.elo_change = abs(loser_elo_change)  # Keep for backward compatibility
+    match.winner_elo_change = winner_elo_change  # New: Actual winner gain
+    match.loser_elo_change = loser_elo_change    # New: Actual loser loss (negative)
     
     # Update user ELOs
     winner.user_elo += winner_elo_change
@@ -308,8 +310,10 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
         is_resignation=True
     )
     
-    # Store the absolute value of loser's change (for historical compatibility)
-    match.elo_change = abs(loser_elo_change)
+    # Store all ELO changes accurately
+    match.elo_change = abs(loser_elo_change)  # Keep for backward compatibility
+    match.winner_elo_change = winner_elo_change  # New: Actual winner gain
+    match.loser_elo_change = loser_elo_change    # New: Actual loser loss (negative)
     
     # Update user ELOs
     winner.user_elo += winner_elo_change
@@ -473,16 +477,18 @@ async def get_match_result(match_id: int, db: AsyncSession = Depends(get_db)):
             "username": winner.leetcode_username or winner.email,
             "elo": match.winner_elo,
             "runtime": match.winner_runtime,
-            "memory": match.winner_memory
+            "memory": match.winner_memory,
+            "elo_change": match.winner_elo_change or match.elo_change  # Fallback for old matches
         },
         "loser": {
             "id": loser.id,
             "username": loser.leetcode_username or loser.email,
             "elo": match.loser_elo,
             "runtime": match.loser_runtime,
-            "memory": match.loser_memory
+            "memory": match.loser_memory,
+            "elo_change": match.loser_elo_change or -match.elo_change  # Fallback for old matches
         },
-        "elo_change": match.elo_change,
+        "elo_change": match.elo_change,  # Keep for backward compatibility
         "problem": match.leetcode_problem,
         "match_duration": match.match_seconds
     }

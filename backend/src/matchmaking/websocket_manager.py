@@ -249,6 +249,12 @@ class WebSocketManager:
             })
             return False
 
+        # Store original ELOs before any swapping
+        original_user1_elo = match.winner_elo  # Original first user's ELO
+        original_user2_elo = match.loser_elo   # Original second user's ELO
+        original_user1_id = match.winner_id    # Original first user's ID
+        original_user2_id = match.loser_id     # Original second user's ID
+
         # Determine winner and loser (submitting user wins)
         if match.winner_id == user_id:
             winner_id = match.winner_id
@@ -315,11 +321,17 @@ class WebSocketManager:
             winner_games_played = await self.get_user_games_played(winner_id, db)
             loser_games_played = await self.get_user_games_played(loser_id, db)
             
-            # Use original ELOs from match record for consistent calculation
-            original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
-            original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+            # Use correct original ELOs based on actual user IDs, not swapped match record
+            if winner_id == original_user1_id:
+                # Winner was originally the first user
+                original_winner_elo = original_user1_elo
+                original_loser_elo = original_user2_elo
+            else:
+                # Winner was originally the second user
+                original_winner_elo = original_user2_elo
+                original_loser_elo = original_user1_elo
             
-            # Calculate ELO changes using original match ELOs
+            # Calculate ELO changes using correct original ELOs
             winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
                 winner_rating=original_winner_elo,
                 loser_rating=original_loser_elo,
@@ -328,8 +340,10 @@ class WebSocketManager:
                 is_resignation=False
             )
             
-            # Store the absolute value of loser's change (for historical compatibility)
-            match.elo_change = abs(loser_elo_change)
+            # Store all ELO changes accurately
+            match.elo_change = abs(loser_elo_change)  # Keep for backward compatibility
+            match.winner_elo_change = winner_elo_change  # New: Actual winner gain
+            match.loser_elo_change = loser_elo_change    # New: Actual loser loss (negative)
             
             # Update user ELOs
             winner.user_elo += winner_elo_change
@@ -380,6 +394,12 @@ class WebSocketManager:
         if not match or match.elo_change != 0:
             return False
 
+        # Store original ELOs before any swapping
+        original_user1_elo = match.winner_elo  # Original first user's ELO
+        original_user2_elo = match.loser_elo   # Original second user's ELO
+        original_user1_id = match.winner_id    # Original first user's ID
+        original_user2_id = match.loser_id     # Original second user's ID
+
         # Determine winner and loser (resigning user loses)
         if match.winner_id == user_id:
             # User was winner, now becomes loser
@@ -425,11 +445,17 @@ class WebSocketManager:
             winner_games_played = await self.get_user_games_played(winner_id, db)
             loser_games_played = await self.get_user_games_played(loser_id, db)
             
-            # Use original ELOs from match record for consistent calculation
-            original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
-            original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+            # Use correct original ELOs based on actual user IDs, not swapped match record
+            if winner_id == original_user1_id:
+                # Winner was originally the first user
+                original_winner_elo = original_user1_elo
+                original_loser_elo = original_user2_elo
+            else:
+                # Winner was originally the second user
+                original_winner_elo = original_user2_elo
+                original_loser_elo = original_user1_elo
             
-            # Calculate ELO changes using original match ELOs with resignation penalty
+            # Calculate ELO changes using correct original ELOs
             winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
                 winner_rating=original_winner_elo,
                 loser_rating=original_loser_elo,
@@ -438,8 +464,10 @@ class WebSocketManager:
                 is_resignation=True
             )
             
-            # Store the absolute value of loser's change (for historical compatibility)
-            match.elo_change = abs(loser_elo_change)
+            # Store all ELO changes accurately
+            match.elo_change = abs(loser_elo_change)  # Keep for backward compatibility
+            match.winner_elo_change = winner_elo_change  # New: Actual winner gain
+            match.loser_elo_change = loser_elo_change    # New: Actual loser loss (negative)
             
             # Update user ELOs
             winner.user_elo += winner_elo_change

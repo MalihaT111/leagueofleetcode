@@ -52,12 +52,11 @@ class EloService:
         loser_games_played: int = None,
         is_resignation: bool = False
     ) -> tuple[int, int]:
-        # For resignations, we might want to apply a slight penalty
-        # but still use the standard Elo calculation
+        # Calculate standard ELO changes based on the match outcome
         winner_score = 1.0
         loser_score = 0.0
         
-        # Calculate rating changes
+        # Calculate rating changes using proper ELO formula
         winner_change = EloService.calculate_rating_change(
             winner_rating, loser_rating, winner_score, winner_games_played
         )
@@ -65,9 +64,9 @@ class EloService:
             loser_rating, winner_rating, loser_score, loser_games_played
         )
         
-        # For resignations, apply a small additional penalty to the loser
+        # Apply resignation penalty: loser loses an additional 2 points
         if is_resignation:
-            loser_change -= 2  # Small additional penalty for giving up
+            loser_change -= 2
         
         return winner_change, loser_change
     

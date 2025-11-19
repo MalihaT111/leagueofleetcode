@@ -137,6 +137,8 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
         loser_id=opponent.id,  # Temporary - will be updated when match completes
         leetcode_problem="TBD",  # Indicates active/pending match
         elo_change=0,
+        winner_elo_change=0,  # New: Will be set when match completes
+        loser_elo_change=0,   # New: Will be set when match completes
         winner_elo=user.user_elo,
         loser_elo=opponent.user_elo,
         match_seconds = 0,
