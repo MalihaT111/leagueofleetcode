@@ -29,6 +29,7 @@ export default function Navbar() {
   const links = [
     { label: "Leaderboard", href: "/leaderboard" },
     { label: "Match", href: "/match" },
+    { label: "Friends", href: "/friends" },
     { label: "Settings", href: "/settings" },
     { label: "Profile", href: "/profile", onClick: handleProfileClick },
     { label: "Logout", href: "/logout", onClick: handleLogoutClick },

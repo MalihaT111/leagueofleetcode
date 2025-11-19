@@ -18,28 +18,40 @@ export default function RecentSubmissionsTable({
   const rows =
     recentMatches.length > 0 ? (
       recentMatches.map((match, i) => (
-        <tr key={i}>
-          <td>
+        <tr 
+          key={i}
+          style={{
+            transition: "background-color 0.2s ease",
+            borderBottom: i === recentMatches.length - 1 ? "none" : "1px solid #333"
+          }}
+        >
+          <td style={{ 
+            padding: "10px 16px",
+            borderBottomLeftRadius: i === recentMatches.length - 1 ? "12px" : "0"
+          }}>
             <Text
               fw={600}
               fz="sm"
-              c={match.outcome === "win" ? "green" : "red"}
+              c={match.outcome === "win" ? "#22c55e" : "#ef4444"}
             >
               {match.outcome.toUpperCase()}
             </Text>
           </td>
-          <td>
+          <td style={{ padding: "10px 16px" }}>
             <Text
               fw={600}
               fz="sm"
-              c={match.rating_change >= 0 ? "green" : "red"}
+              c={match.rating_change >= 0 ? "#22c55e" : "#ef4444"}
             >
               {match.rating_change >= 0
                 ? `+${match.rating_change}`
                 : match.rating_change}
             </Text>
           </td>
-          <td>
+          <td style={{ 
+            padding: "10px 16px",
+            borderBottomRightRadius: i === recentMatches.length - 1 ? "12px" : "0"
+          }}>
             <Text fw={500} fz="sm" c="white">
               {match.question}
             </Text>
@@ -48,8 +60,15 @@ export default function RecentSubmissionsTable({
       ))
     ) : (
       <tr>
-        <td colSpan={3}>
-          <Text fz="sm" c="gray.5" ta="center" py="sm">
+        <td 
+          colSpan={3}
+          style={{ 
+            padding: "20px 16px",
+            borderBottomLeftRadius: "12px",
+            borderBottomRightRadius: "12px"
+          }}
+        >
+          <Text fz="sm" c="gray.5" ta="center">
             No recent submissions
           </Text>
         </td>
@@ -57,46 +76,72 @@ export default function RecentSubmissionsTable({
     );
 
   return (
-    <Card shadow="sm" radius="md" p="lg" w={380} bg="gray.3">
+    <Card shadow={0} radius="md" p="lg" w={450} bg="gray.3">
       <Title
         order={3}
         fw={900}
         fz="lg"
-        mb="sm"
+        mb="md"
         c="black"
         style={{ letterSpacing: 0.5, fontStyle: "italic" }}
       >
         RECENT SUBMISSIONS
       </Title>
 
-      <Table
-        withColumnBorders
-        withRowBorders
-        highlightOnHover={false}
-        horizontalSpacing="sm"
-        verticalSpacing="xs"
-      >
-        <thead style={{ backgroundColor: "black" }}>
-          <tr>
-            <th>
-              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
-                OUTCOME
-              </Text>
-            </th>
-            <th>
-              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
-                RATING CHANGE
-              </Text>
-            </th>
-            <th>
-              <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
-                QUESTION
-              </Text>
-            </th>
-          </tr>
-        </thead>
-        <tbody style={{ backgroundColor: "black" }}>{rows}</tbody>
-      </Table>
+      <div style={{ 
+        borderRadius: "12px", 
+        overflow: "hidden",
+        border: "2px solid #333"
+      }}>
+        <Table
+          withColumnBorders={false}
+          withRowBorders={false}
+          highlightOnHover={true}
+          horizontalSpacing="md"
+          verticalSpacing="sm"
+          style={{
+            borderRadius: "12px",
+            overflow: "hidden"
+          }}
+          styles={{
+            table: {
+              '& tbody tr:hover': {
+                backgroundColor: '#1f2937 !important'
+              }
+            }
+          }}
+        >
+          <thead style={{ 
+            backgroundColor: "#1a1a1a",
+            borderBottom: "2px solid #333"
+          }}>
+            <tr>
+              <th style={{ 
+                padding: "12px 16px",
+                borderTopLeftRadius: "12px"
+              }}>
+                <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                  OUTCOME
+                </Text>
+              </th>
+              <th style={{ padding: "12px 16px" }}>
+                <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                  RATING CHANGE
+                </Text>
+              </th>
+              <th style={{ 
+                padding: "12px 16px",
+                borderTopRightRadius: "12px"
+              }}>
+                <Text fw={600} fz="sm" c="white" style={{ fontStyle: "italic" }}>
+                  QUESTION
+                </Text>
+              </th>
+            </tr>
+          </thead>
+          <tbody style={{ backgroundColor: "#0d1117" }}>{rows}</tbody>
+        </Table>
+      </div>
     </Card>
   );
 }
