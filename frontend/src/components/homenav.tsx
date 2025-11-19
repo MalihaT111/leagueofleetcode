@@ -48,6 +48,17 @@ export default function HomeNavbar() {
         </Text>
       </Link>
 
+      <Link
+        href="/friends"
+        style={linkStyle}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#d8a727")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+      >
+        <Text fw={600} fz="md" c="inherit">
+          FRIENDS
+        </Text>
+      </Link>
+
       <Text
         fw={600}
         fz="md"
