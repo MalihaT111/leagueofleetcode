@@ -64,6 +64,29 @@ class LeetCodeService:
             hard_solved=hard,
         )
     
+    @staticmethod
+    async def get_user_profile_summary(username: str) -> dict:
+        """
+        Get user's LeetCode profile summary including aboutMe (bio).
+        Returns the profile data including username, ranking, avatar, realName, and aboutMe.
+        """
+        data = await LeetCodeGraphQLClient.query(PROFILE_QUERY, {"username": username})
+        
+        matched_user = data.get("data", {}).get("matchedUser")
+        
+        if not matched_user:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found on LeetCode.")
+        
+        profile = matched_user.get("profile", {})
+        
+        return {
+            "username": matched_user.get("username"),
+            "ranking": profile.get("ranking"),
+            "userAvatar": profile.get("userAvatar"),
+            "realName": profile.get("realName"),
+            "aboutMe": profile.get("aboutMe", ""),
+        }
+    
     """
 "variables":{"categorySlug":"all-code-essentials","filtersV2":{"filterCombineType":"ALL","statusFilter":{"questionStatuses":[],"operator":"IS"},"difficultyFilter":{"difficulties":[],"operator":"IS"},"languageFilter":{"languageSlugs":[],"operator":"IS"},"topicFilter":{"topicSlugs":[],"operator":"IS"},"acceptanceFilter":{},"frequencyFilter":{},"frontendIdFilter":{},"lastSubmittedFilter":{},"publishedFilter":{},"companyFilter":{"companySlugs":[],"operator":"IS"},"positionFilter":{"positionSlugs":[],"operator":"IS"},"contestPointFilter":{"contestPoints":[],"operator":"IS"},"premiumFilter":{"premiumStatus":["NOT_PREMIUM"],"operator":"IS"}},"searchKeyword":""},"operationName":"randomQuestionV2"}
     """

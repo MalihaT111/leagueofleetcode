@@ -26,7 +26,9 @@ The registration system now uses a two-step process where users are NOT created 
 5. Backend:
    - Retrieves temporary registration data by email
    - Validates LeetCode username is not already taken
-   - Creates the actual User record in the database with:
+   - **Fetches the user's LeetCode profile via GraphQL API**
+   - **Verifies the hash exists in the user's profile bio (aboutMe field)**
+   - If verification passes, creates the actual User record in the database with:
      - Email
      - Hashed password
      - LeetCode username
@@ -44,8 +46,9 @@ The registration system now uses a two-step process where users are NOT created 
 
 - **New endpoints:**
   - `POST /auth/register/init` - Start registration, get verification hash
-  - `POST /auth/register/complete` - Complete registration with LeetCode username
+  - `POST /auth/register/complete` - Complete registration with LeetCode username (includes verification)
   - `GET /auth/register/status/{email}` - Check pending registration status
+  - `GET /api/leetcode/user/{username}/profile` - Get LeetCode user profile including bio
 
 - **Modified:**
   - `backend/src/main.py` - Added custom registration router, disabled default FastAPI-users registration
@@ -66,5 +69,6 @@ The registration system now uses a two-step process where users are NOT created 
 
 ## Notes
 - Temporary registrations are stored in-memory (for production, consider Redis or database table)
-- The system currently trusts users have added the hash to their profile (future: implement actual LeetCode API verification)
+- **The system now verifies the hash exists in the user's LeetCode profile bio via the LeetCode GraphQL API**
 - Old FastAPI-users `/auth/register` endpoint is disabled but kept in code for reference
+- Verification is done by fetching the user's profile and checking if the hash appears in their `aboutMe` field

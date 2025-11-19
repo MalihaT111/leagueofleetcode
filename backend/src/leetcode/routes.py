@@ -29,4 +29,8 @@ async def get_user_submissions(username: str):
 async def get_recent_user_submission(username: str):
     """Get user's most recent LeetCode submission"""
     return await LeetCodeService.get_recent_user_submission(username)
-    
+
+@router.get("/user/{username}/profile")
+async def get_user_profile_summary(username: str):
+    """Get user's LeetCode profile summary including bio (aboutMe)"""
+    return await LeetCodeService.get_user_profile_summary(username)
