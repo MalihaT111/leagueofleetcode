@@ -43,15 +43,21 @@ async def get_profile_data(db: AsyncSession, user_id: int) -> Optional[Dict[str,
         else:
             break  # streak ends once a non-win occurs
 
-    # 4️⃣ Prepare recent 5 matches
-    recent_matches = [
-        {
+    # 4️⃣ Prepare recent 5 matches with correct ELO changes
+    recent_matches = []
+    for m in all_matches[:5]:
+        if m.winner_id == user_id:
+            # User won - use winner_elo_change or fallback to positive elo_change
+            rating_change = m.winner_elo_change if m.winner_elo_change is not None else m.elo_change
+        else:
+            # User lost - use loser_elo_change or fallback to negative elo_change
+            rating_change = m.loser_elo_change if m.loser_elo_change is not None else -m.elo_change
+        
+        recent_matches.append({
             "outcome": "win" if m.winner_id == user_id else "loss",
-            "rating_change": m.elo_change,
+            "rating_change": rating_change,
             "question": m.leetcode_problem,
-        }
-        for m in all_matches[:5]
-    ]
+        })
 
     # 5️⃣ Combine all into a single clean response
     return {

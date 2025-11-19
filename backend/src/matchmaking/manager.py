@@ -53,6 +53,10 @@ class MatchmakingManager:
 
             # Create match record
             match_record = await create_match_record(db, user, opp)
+            if not match_record:
+                print(f"❌ Failed to create match record between {user.email} and {opp.email}")
+                continue
+            
             match = match_record["match"]
             problem = match_record["problem"]
             self.problem = problem  # Store for second player
@@ -65,3 +69,7 @@ class MatchmakingManager:
             }
 
         return None
+    
+    def get_problem_for_match(self, match_id: int):
+        """Get the stored problem for a match (fallback method)"""
+        return self.problem  # Return the last stored problem

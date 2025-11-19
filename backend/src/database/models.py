@@ -75,9 +75,14 @@ class MatchHistory(Base):
     winner_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
     loser_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
     leetcode_problem = Column(String(255), nullable=False)
-    elo_change = Column(Integer, nullable=False)
-    winner_elo = Column(Integer, nullable=False)
-    loser_elo = Column(Integer, nullable=False)
+    
+    # ELO tracking columns
+    elo_change = Column(Integer, nullable=False)  # Keep for backward compatibility
+    winner_elo_change = Column(Integer, nullable=True)  # New: Winner's actual ELO gain
+    loser_elo_change = Column(Integer, nullable=True)   # New: Loser's actual ELO loss (negative)
+    winner_elo = Column(Integer, nullable=False)  # Winner's ELO after match
+    loser_elo = Column(Integer, nullable=False)   # Loser's ELO after match
+    
     match_seconds = Column(Integer, nullable=False)
     winner_runtime = Column(Integer, nullable=False)
     loser_runtime = Column(Integer, nullable=False)

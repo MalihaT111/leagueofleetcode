@@ -93,12 +93,13 @@ export default function MatchResultPage() {
       username: data.winner?.username || "Winner",
       runtime: data.winner?.runtime || 0,
       memory: data.winner?.memory || 0,
-      elo_change: data.elo_change || 0,
+      elo_change: data.winner?.elo_change || data.elo_change || 0,
     },
     loser: {
       username: data.loser?.username || "Loser",
       runtime: data.loser?.runtime || 0,
       memory: data.loser?.memory || 0,
+      elo_change: data.loser?.elo_change || -data.elo_change || 0,
     },
   };
 
@@ -239,9 +240,15 @@ export default function MatchResultPage() {
               <span style={{ color: "#06d6a0" }}>{result.duration}</span>
             </Text>
             <Text>
-              <b>ELO Change:</b>{" "}
-              <span style={{ color: "#118ab2", fontWeight: 700 }}>
-                ±{result.winner.elo_change}
+              <b>Winner ELO:</b>{" "}
+              <span style={{ color: "#06d6a0", fontWeight: 700 }}>
+                +{result.winner.elo_change}
+              </span>
+            </Text>
+            <Text>
+              <b>Loser ELO:</b>{" "}
+              <span style={{ color: "#ff6b6b", fontWeight: 700 }}>
+                {result.loser.elo_change}
               </span>
             </Text>
           </Stack>

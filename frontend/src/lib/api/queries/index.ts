@@ -9,6 +9,7 @@ export interface MatchResultData {
     elo: number;
     runtime: number; // in milliseconds
     memory: number; // in MB
+    elo_change: number; // Winner's ELO gain (positive)
   };
   loser: {
     id: number;
@@ -16,10 +17,11 @@ export interface MatchResultData {
     elo: number;
     runtime: number; // in milliseconds
     memory: number; // in MB
+    elo_change: number; // Loser's ELO loss (negative)
   };
   problem: string; // problem slug
   match_duration: number; // in seconds
-  elo_change: number;
+  elo_change: number; // Keep for backward compatibility
 }
 
 export const useMatchResults = (matchId: number) => {
