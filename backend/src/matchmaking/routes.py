@@ -1,16 +1,31 @@
 # src/matchmaking/routes.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from ..database.database import get_db
 from ..database.models import User, MatchHistory
 from ..matchmaking.manager import MatchmakingManager
 from ..matchmaking.manager import MATCHMAKING_KEY
 from ..matchmaking.schemas import QueueResponse, MatchResponse
+from ..matchmaking.elo_service import EloService
 from ..leetcode.schemas import Problem
 
 router = APIRouter(tags=["Matchmaking"])
 manager = MatchmakingManager()
+
+async def get_user_games_played(user_id: int, db: AsyncSession) -> int:
+    """Get the total number of completed games for a user."""
+    result = await db.execute(
+        select(func.count(MatchHistory.match_id))
+        .where(
+            or_(
+                MatchHistory.winner_id == user_id,
+                MatchHistory.loser_id == user_id
+            )
+        )
+        .where(MatchHistory.elo_change != 0)  # Only count completed matches
+    )
+    return result.scalar() or 0
 
 @router.post("/queue/{user_id}", response_model=QueueResponse)
 async def join_queue(user_id: int, db: AsyncSession = Depends(get_db)):
@@ -176,13 +191,29 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     # Set match duration (fallback - WebSocket should handle this)
     match.match_seconds = 0  # Default for REST API submissions
     
-    # Calculate ELO changes (simple +15/-15 for now)
-    elo_change = 15
-    match.elo_change = elo_change
+    # Get games played for both players for Elo calculation
+    winner_games_played = await get_user_games_played(winner_id, db)
+    loser_games_played = await get_user_games_played(loser_id, db)
     
-    # Update user ELOs and submission data
-    winner.user_elo += elo_change
-    loser.user_elo -= elo_change
+    # Use original ELOs from match record for consistent calculation
+    original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
+    original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+    
+    # Calculate ELO changes using original match ELOs
+    winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
+        winner_rating=original_winner_elo,
+        loser_rating=original_loser_elo,
+        winner_games_played=winner_games_played,
+        loser_games_played=loser_games_played,
+        is_resignation=False
+    )
+    
+    # Store the absolute value of loser's change (for historical compatibility)
+    match.elo_change = abs(loser_elo_change)
+    
+    # Update user ELOs
+    winner.user_elo += winner_elo_change
+    loser.user_elo += loser_elo_change  # This will be negative
     match.winner_elo = winner.user_elo
     match.loser_elo = loser.user_elo
     
@@ -194,7 +225,13 @@ async def submit_solution(match_id: int, user_id: int, db: AsyncSession = Depend
     
     await db.commit()
     
-    return {"status": "completed", "winner_id": winner_id, "elo_change": elo_change}
+    return {
+        "status": "completed", 
+        "winner_id": winner_id, 
+        "winner_elo_change": winner_elo_change,
+        "loser_elo_change": loser_elo_change,
+        "elo_change": abs(loser_elo_change)  # For backward compatibility
+    }
 
 @router.post("/resign/{match_id}/{user_id}")
 async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(get_db)):
@@ -228,7 +265,8 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
         raise HTTPException(status_code=400, detail="User not in this match")
     
     # Get the problem for this match and update the leetcode_problem field
-    problem = manager.get_problem_for_match(match_id)
+    from ..matchmaking.websocket_manager import websocket_manager
+    problem = websocket_manager.match_problems.get(match_id)
     if problem:
         try:
             problem_slug = problem.slug if hasattr(problem, 'slug') else str(problem.get('slug', 'unknown'))
@@ -244,22 +282,40 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
     # Set match duration (fallback - WebSocket should handle this)
     match.match_seconds = 0  # Default for REST API resignations
     
-    # ELO changes for resignation: winner gets +15, loser loses -10
-    winner_elo_change = 15
-    loser_elo_change = 10  # Resigning user loses 10 ELO
-    match.elo_change = loser_elo_change  # Store the loser's penalty
-    
-    # Update user ELOs
+    # Get user objects and games played for Elo calculation
     winner_result = await db.execute(select(User).where(User.id == winner_id))
     winner = winner_result.scalar_one_or_none()
     loser_result = await db.execute(select(User).where(User.id == loser_id))
     loser = loser_result.scalar_one_or_none()
     
-    if winner and loser:
-        winner.user_elo += winner_elo_change
-        loser.user_elo -= loser_elo_change
-        match.winner_elo = winner.user_elo
-        match.loser_elo = loser.user_elo
+    if not winner or not loser:
+        raise HTTPException(status_code=404, detail="Player data not found")
+    
+    # Get games played for both players for Elo calculation
+    winner_games_played = await get_user_games_played(winner_id, db)
+    loser_games_played = await get_user_games_played(loser_id, db)
+    
+    # Use original ELOs from match record for consistent calculation
+    original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
+    original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+    
+    # Calculate ELO changes using original match ELOs with resignation penalty
+    winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
+        winner_rating=original_winner_elo,
+        loser_rating=original_loser_elo,
+        winner_games_played=winner_games_played,
+        loser_games_played=loser_games_played,
+        is_resignation=True
+    )
+    
+    # Store the absolute value of loser's change (for historical compatibility)
+    match.elo_change = abs(loser_elo_change)
+    
+    # Update user ELOs
+    winner.user_elo += winner_elo_change
+    loser.user_elo += loser_elo_change  # This will be negative
+    match.winner_elo = winner.user_elo
+    match.loser_elo = loser.user_elo
     
     # Set runtime and memory data for resignation (both get -1 since no valid submission)
     match.winner_runtime = -1
@@ -276,6 +332,112 @@ async def resign_match(match_id: int, user_id: int, db: AsyncSession = Depends(g
         "resignation": True,
         "winner_elo_change": winner_elo_change,
         "loser_elo_change": loser_elo_change
+    }
+
+@router.get("/rating-preview/{user_id}/{opponent_id}")
+async def get_rating_preview(user_id: int, opponent_id: int, db: AsyncSession = Depends(get_db)):
+    """Get a preview of potential rating changes before a match"""
+    
+    # Get both users
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    
+    opponent_result = await db.execute(select(User).where(User.id == opponent_id))
+    opponent = opponent_result.scalar_one_or_none()
+    
+    if not user or not opponent:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get games played for both players
+    user_games_played = await get_user_games_played(user_id, db)
+    opponent_games_played = await get_user_games_played(opponent_id, db)
+    
+    # Get rating change previews for both players
+    user_preview = EloService.get_rating_change_preview(
+        user.user_elo, opponent.user_elo, user_games_played
+    )
+    opponent_preview = EloService.get_rating_change_preview(
+        opponent.user_elo, user.user_elo, opponent_games_played
+    )
+    
+    return {
+        "user": {
+            "id": user_id,
+            "current_elo": user.user_elo,
+            "games_played": user_games_played,
+            "win_probability": user_preview["win_probability"],
+            "rating_change_on_win": user_preview["rating_change_on_win"],
+            "rating_change_on_loss": user_preview["rating_change_on_loss"]
+        },
+        "opponent": {
+            "id": opponent_id,
+            "current_elo": opponent.user_elo,
+            "games_played": opponent_games_played,
+            "win_probability": opponent_preview["win_probability"],
+            "rating_change_on_win": opponent_preview["rating_change_on_win"],
+            "rating_change_on_loss": opponent_preview["rating_change_on_loss"]
+        }
+    }
+
+@router.get("/match-rating-preview/{match_id}")
+async def get_match_rating_preview(match_id: int, db: AsyncSession = Depends(get_db)):
+    """Get rating preview for both players in a match"""
+    
+    # Find the match
+    match_result = await db.execute(
+        select(MatchHistory).where(MatchHistory.match_id == match_id)
+    )
+    match = match_result.scalar_one_or_none()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    # Get both players
+    user1_result = await db.execute(select(User).where(User.id == match.winner_id))
+    user1 = user1_result.scalar_one_or_none()
+    
+    user2_result = await db.execute(select(User).where(User.id == match.loser_id))
+    user2 = user2_result.scalar_one_or_none()
+    
+    if not user1 or not user2:
+        raise HTTPException(status_code=404, detail="Player data not found")
+    
+    # Get games played for both players
+    user1_games_played = await get_user_games_played(match.winner_id, db)
+    user2_games_played = await get_user_games_played(match.loser_id, db)
+    
+    # Use the original ELOs stored in the match record (at match start time)
+    # This ensures preview matches actual calculation
+    original_user1_elo = match.winner_elo if match.winner_id == user1.id else match.loser_elo
+    original_user2_elo = match.loser_elo if match.winner_id == user1.id else match.winner_elo
+    
+    # Get rating change previews using original match ELOs
+    user1_preview = EloService.get_rating_change_preview(
+        original_user1_elo, original_user2_elo, user1_games_played
+    )
+    user2_preview = EloService.get_rating_change_preview(
+        original_user2_elo, original_user1_elo, user2_games_played
+    )
+    
+    return {
+        "player1": {
+            "id": user1.id,
+            "username": user1.leetcode_username or user1.email,
+            "current_elo": user1.user_elo,
+            "games_played": user1_games_played,
+            "win_probability": user1_preview["win_probability"],
+            "rating_change_on_win": user1_preview["rating_change_on_win"],
+            "rating_change_on_loss": user1_preview["rating_change_on_loss"]
+        },
+        "player2": {
+            "id": user2.id,
+            "username": user2.leetcode_username or user2.email,
+            "current_elo": user2.user_elo,
+            "games_played": user2_games_played,
+            "win_probability": user2_preview["win_probability"],
+            "rating_change_on_win": user2_preview["rating_change_on_win"],
+            "rating_change_on_loss": user2_preview["rating_change_on_loss"]
+        }
     }
 
 @router.get("/result/{match_id}")

@@ -44,3 +44,21 @@ export async function getRecentUserSubmission(username) {
   if (!response.ok) throw new Error("Failed to get recent submission");
   return await response.json();
 }
+
+export async function getRatingPreview(userId, opponentId) {
+  const response = await fetch(`${BASE_URL}/matchmaking/rating-preview/${userId}/${opponentId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Failed to get rating preview");
+  return await response.json();
+}
+
+export async function getMatchRatingPreview(matchId) {
+  const response = await fetch(`${BASE_URL}/matchmaking/match-rating-preview/${matchId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Failed to get match rating preview");
+  return await response.json();
+}

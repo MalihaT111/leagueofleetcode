@@ -4,10 +4,11 @@ import asyncio
 from typing import Dict, Set
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from ..database.models import User
+from sqlalchemy import select, func, or_
+from ..database.models import User, MatchHistory
 from .manager import MatchmakingManager
 from .service import create_match_record
+from .elo_service import EloService
 import time
 
 class WebSocketManager:
@@ -21,6 +22,20 @@ class WebSocketManager:
         # Store match timers by match_id
         self.match_timers: Dict[int, dict] = {}  # match_id -> {start_time, players, status}
         self.matchmaking_manager = MatchmakingManager()
+
+    async def get_user_games_played(self, user_id: int, db: AsyncSession) -> int:
+        """Get the total number of completed games for a user."""
+        result = await db.execute(
+            select(func.count(MatchHistory.match_id))
+            .where(
+                or_(
+                    MatchHistory.winner_id == user_id,
+                    MatchHistory.loser_id == user_id
+                )
+            )
+            .where(MatchHistory.elo_change != 0)  # Only count completed matches
+        )
+        return result.scalar() or 0
 
     async def connect(self, websocket: WebSocket, user_id: int):
         """Store WebSocket connection (already accepted in route)"""
@@ -114,6 +129,13 @@ class WebSocketManager:
 
             # Create match record
             match_record = await create_match_record(db, user1, user2)
+            if not match_record:
+                print(f"❌ Failed to create match record between {user1.email} and {user2.email}")
+                # Re-add users to queue
+                self.queue[user1_id] = {"elo": user1.user_elo, "websocket": self.active_connections.get(user1_id)}
+                self.queue[user2_id] = {"elo": user2.user_elo, "websocket": self.active_connections.get(user2_id)}
+                return
+            
             match = match_record["match"]
             problem = match_record["problem"]
 
@@ -158,6 +180,9 @@ class WebSocketManager:
 
         except Exception as e:
             print(f"❌ Error creating match: {e}")
+            # Re-add users to queue if match creation failed
+            self.queue[user1_id] = {"elo": user1.user_elo, "websocket": self.active_connections.get(user1_id)}
+            self.queue[user2_id] = {"elo": user2.user_elo, "websocket": self.active_connections.get(user2_id)}
 
     async def submit_solution(self, match_id: int, user_id: int, db: AsyncSession, frontend_seconds: int = 0):
         """Handle solution submission with LeetCode validation"""
@@ -252,13 +277,10 @@ class WebSocketManager:
                 match.match_seconds = 0
                 print(f"⚠️ No timer data found for match {match_id}")
 
-        # Update match with problem slug and ELO changes
+        # Update match with problem slug
         problem = self.match_problems.get(match_id)
         if problem:
             match.leetcode_problem = problem.slug
-
-        elo_change = 15
-        match.elo_change = elo_change
 
         # Get runtime and memory data from the winner's submission
         try:
@@ -282,15 +304,36 @@ class WebSocketManager:
             winner_runtime = -1
             winner_memory = -1.0
 
-        # Update user ELOs
+        # Get user data and calculate ELO changes
         winner_result = await db.execute(select(User).where(User.id == winner_id))
         winner = winner_result.scalar_one_or_none()
         loser_result = await db.execute(select(User).where(User.id == loser_id))
         loser = loser_result.scalar_one_or_none()
 
         if winner and loser:
-            winner.user_elo += elo_change
-            loser.user_elo -= elo_change
+            # Get games played for both players for Elo calculation
+            winner_games_played = await self.get_user_games_played(winner_id, db)
+            loser_games_played = await self.get_user_games_played(loser_id, db)
+            
+            # Use original ELOs from match record for consistent calculation
+            original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
+            original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+            
+            # Calculate ELO changes using original match ELOs
+            winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
+                winner_rating=original_winner_elo,
+                loser_rating=original_loser_elo,
+                winner_games_played=winner_games_played,
+                loser_games_played=loser_games_played,
+                is_resignation=False
+            )
+            
+            # Store the absolute value of loser's change (for historical compatibility)
+            match.elo_change = abs(loser_elo_change)
+            
+            # Update user ELOs
+            winner.user_elo += winner_elo_change
+            loser.user_elo += loser_elo_change  # This will be negative
             match.winner_elo = winner.user_elo
             match.loser_elo = loser.user_elo
 
@@ -310,14 +353,14 @@ class WebSocketManager:
             "type": "match_completed",
             "result": "won",
             "match_id": match_id,
-            "elo_change": f"+{elo_change}"
+            "elo_change": f"+{winner_elo_change}"
         })
 
         await self.send_to_user(loser_id, {
             "type": "match_completed", 
             "result": "lost",
             "match_id": match_id,
-            "elo_change": f"-{elo_change}"
+            "elo_change": f"{loser_elo_change}"  # Already negative
         })
 
         print(f"🏆 Match {match_id} completed. Winner: {winner_id}, Loser: {loser_id}")
@@ -366,25 +409,41 @@ class WebSocketManager:
                 match.match_seconds = 0
                 print(f"⚠️ No timer data found for resigned match {match_id}")
 
-        # Update match with problem slug and ELO changes
+        # Update match with problem slug
         problem = self.match_problems.get(match_id)
         if problem:
             match.leetcode_problem = problem.slug
 
-        # ELO changes for resignation: winner gets +15, loser loses -10
-        winner_elo_change = 15
-        loser_elo_change = 10
-        match.elo_change = loser_elo_change
-
-        # Update user ELOs
+        # Get user data and calculate ELO changes for resignation
         winner_result = await db.execute(select(User).where(User.id == winner_id))
         winner = winner_result.scalar_one_or_none()
         loser_result = await db.execute(select(User).where(User.id == loser_id))
         loser = loser_result.scalar_one_or_none()
 
         if winner and loser:
+            # Get games played for both players for Elo calculation
+            winner_games_played = await self.get_user_games_played(winner_id, db)
+            loser_games_played = await self.get_user_games_played(loser_id, db)
+            
+            # Use original ELOs from match record for consistent calculation
+            original_winner_elo = match.winner_elo if match.winner_id == winner_id else match.loser_elo
+            original_loser_elo = match.loser_elo if match.winner_id == winner_id else match.winner_elo
+            
+            # Calculate ELO changes using original match ELOs with resignation penalty
+            winner_elo_change, loser_elo_change = EloService.calculate_match_rating_changes(
+                winner_rating=original_winner_elo,
+                loser_rating=original_loser_elo,
+                winner_games_played=winner_games_played,
+                loser_games_played=loser_games_played,
+                is_resignation=True
+            )
+            
+            # Store the absolute value of loser's change (for historical compatibility)
+            match.elo_change = abs(loser_elo_change)
+            
+            # Update user ELOs
             winner.user_elo += winner_elo_change
-            loser.user_elo -= loser_elo_change
+            loser.user_elo += loser_elo_change  # This will be negative
             match.winner_elo = winner.user_elo
             match.loser_elo = loser.user_elo
 
@@ -409,7 +468,7 @@ class WebSocketManager:
             "type": "match_completed", 
             "result": "lost",
             "match_id": match_id,
-            "elo_change": f"-{loser_elo_change}",
+            "elo_change": f"{loser_elo_change}",  # Already negative
             "reason": "resigned"
         })
 

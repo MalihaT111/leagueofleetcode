@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "../navbar";
 import { ProfileBox } from "../profilebox";
 import { orbitron, montserrat } from "@/app/fonts";
-import { useSubmitSolution, useMatchStatus } from "@/lib/api/queries/matchmaking";
+import { useSubmitSolution, useMatchStatus, useMatchRatingPreview } from "@/lib/api/queries/matchmaking";
 
 interface MatchFoundProps {
   match: {
@@ -47,6 +47,9 @@ export default function MatchFound({
   
   // Poll for match completion (fallback only)
   const { data: matchStatus } = useMatchStatus(user.id, timerPhase === 'active' && !matchCompleted);
+  
+  // Get rating preview for this match
+  const { data: ratingPreview } = useMatchRatingPreview(match.match_id, true);
   
   // Cooldown timer effect
   useEffect(() => {
@@ -260,7 +263,19 @@ export default function MatchFound({
 
       {/* Rules */}
       <Text size="sm" c="dimmed">
-        win +15 / lose -15 / resign -10
+        {ratingPreview ? (
+          (() => {
+            // Find which player is the current user
+            const currentPlayer = ratingPreview.player1.id === user.id ? ratingPreview.player1 : ratingPreview.player2;
+            const winChange = currentPlayer.rating_change_on_win;
+            const lossChange = currentPlayer.rating_change_on_loss;
+            const resignChange = lossChange - 2; // Resignation penalty is -2 additional
+            
+            return `win ${winChange >= 0 ? '+' : ''}${winChange} / lose ${lossChange} / resign ${resignChange}`;
+          })()
+        ) : (
+          "Loading ELO changes..."
+        )}
       </Text>
 
       {/* Buttons */}

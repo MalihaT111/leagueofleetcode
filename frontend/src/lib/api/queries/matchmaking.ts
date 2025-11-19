@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { joinQueue, leaveQueue, getMatchStatus, submitSolution, getRecentUserSubmission } from "../matchmaking";
+import { joinQueue, leaveQueue, getMatchStatus, submitSolution, getRecentUserSubmission, getRatingPreview, getMatchRatingPreview } from "../matchmaking";
 
 export const useJoinQueue = () => {
   return useMutation({
@@ -35,6 +35,24 @@ export const useRecentUserSubmission = (username: string, enabled: boolean = fal
     queryKey: ["recentSubmission", username],
     queryFn: () => getRecentUserSubmission(username),
     enabled: enabled && !!username,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useRatingPreview = (userId: number, opponentId: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ["ratingPreview", userId, opponentId],
+    queryFn: () => getRatingPreview(userId, opponentId),
+    enabled: enabled && !!userId && !!opponentId,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useMatchRatingPreview = (matchId: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ["matchRatingPreview", matchId],
+    queryFn: () => getMatchRatingPreview(matchId),
+    enabled: enabled && !!matchId,
     refetchOnWindowFocus: false,
   });
 };

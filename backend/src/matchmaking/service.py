@@ -95,15 +95,37 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
     shared_topics = list(set(user.topics or []) & set(opponent.topics or []))
     shared_difficulty = list(set(user.difficulty or []) & set(opponent.difficulty or []))
 
+    # If no overlap, use fallback defaults to ensure matches can still be created
     if not shared_topics and not shared_difficulty:
-        print(f"⚠️ No overlap between {user.email} and {opponent.email}")
-        return None  # stop early — not compatible
+        print(f"⚠️ No overlap between {user.email} and {opponent.email}, using fallback settings")
+        # Use medium difficulty and popular topics as fallback
+        shared_difficulty = ["2"]  # Medium difficulty
+        shared_topics = ["0", "1", "2"]  # Array, String, Hash Table (most common)
     
-    topic_slugs = [TOPIC_MAPPING[i] for i in shared_topics if 0 <= i < len(TOPIC_MAPPING)]
+    # Convert topic indices to topic slugs
+    topic_slugs = []
+    for topic_idx in shared_topics:
+        try:
+            idx = int(topic_idx)
+            if 0 <= idx < len(TOPIC_MAPPING):
+                topic_slugs.append(TOPIC_MAPPING[idx])
+        except (ValueError, TypeError):
+            continue
+    
+    # Convert difficulty numbers to difficulty strings
+    difficulty_mapping = {"1": "EASY", "2": "MEDIUM", "3": "HARD"}
+    difficulty_strings = []
+    for diff in shared_difficulty:
+        try:
+            diff_str = str(diff)
+            if diff_str in difficulty_mapping:
+                difficulty_strings.append(difficulty_mapping[diff_str])
+        except (ValueError, TypeError):
+            continue
     
     problem = await LeetCodeService.get_random_problem(
         topics=topic_slugs or None,
-        difficulty=shared_difficulty or None
+        difficulty=difficulty_strings or None
     )
 
     if not problem or (isinstance(problem, dict) and "error" in problem):
