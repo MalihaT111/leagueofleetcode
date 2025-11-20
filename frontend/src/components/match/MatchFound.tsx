@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Flex, Title, Text, Button, Anchor } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import Navbar from "../navbar";
-import { ProfileBox } from "../profilebox";
+import { ProfileBox } from "../profile/profilebox";
 import { orbitron, montserrat } from "@/app/fonts";
 import { useSubmitSolution, useMatchStatus, useMatchRatingPreview } from "@/lib/api/queries/matchmaking";
 

@@ -20,6 +20,8 @@ from src.leetcode.routes import router as leetcode_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()  # Run database initialization
+    from src.leetcode.service.leetcode_service import LeetCodeService
+    await LeetCodeService.load_cache()  # Load topic map cache
     yield
 
 # --- FastAPI app instance ---
@@ -69,3 +71,8 @@ async def get_profile(user: User = Depends(current_user)):
         "is_verified": user.is_verified,
         "is_superuser": user.is_superuser,
     }
+
+@app.on_event("startup")
+async def startup_event():
+    await LeetCodeService.load_cache()
+

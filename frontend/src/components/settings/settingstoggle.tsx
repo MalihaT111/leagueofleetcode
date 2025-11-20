@@ -1,21 +1,33 @@
 "use client";
 
 import React from "react";
-import { Card, Flex, Group, Text, Switch } from "@mantine/core";
-import ProfileHeader from "@/components/profilehead";
-import { useSettings } from "@/lib/api/queries/settings";
+import { Card, Flex, Group, Text, Switch, Badge } from "@mantine/core";
+import ProfileHeader from "@/components/profile/profilehead";
+import { ValidationResult } from "@/lib/hooks/useTopicValidation";
+import { Settings } from "@/lib/api/queries/settings";
 
-export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
-  const {
-    settings,
-    loading,
-    error,
-    toggleRepeat,
-    toggleDifficulty,
-    isDifficultyOn,
-  } = useSettings(userId);
+interface SettingsTogglesProps {
+  userId?: number;
+  validation?: ValidationResult;
+  settingsHook: {
+    settings: Settings | null;
+    loading: boolean;
+    error: string | null;
+    toggleRepeat: () => void;
+    toggleDifficulty: (level: number) => void;
+    isDifficultyOn: (level: number) => boolean;
+  };
+}
 
-  if (loading || !settings) return <Text c="gray.4">Loading settings...</Text>;
+export default function SettingsToggles({
+  validation,
+  settingsHook,
+}: SettingsTogglesProps) {
+  const { settings, loading, error, toggleRepeat, toggleDifficulty, isDifficultyOn } =
+    settingsHook;
+
+  if (loading || !settings)
+    return <Text c="gray.4">Loading settings...</Text>;
 
   if (error)
     return (
@@ -28,6 +40,28 @@ export default function SettingsToggles({ userId = 1 }: { userId?: number }) {
     <Card shadow="sm" radius="md" p="lg" w={280} bg="gray.3">
       <Flex direction="column" gap="lg">
         <ProfileHeader username={settings.leetcode_username} />
+
+        {/* Validation Status Badge */}
+        {validation && (
+          <Badge
+            size="lg"
+            variant="filled"
+            color={
+              validation.blockType === "hard"
+                ? "red"
+                : validation.blockType === "soft"
+                ? "yellow"
+                : "green"
+            }
+            style={{ alignSelf: "center" }}
+          >
+            {validation.blockType === "hard"
+              ? "❌ Cannot Match"
+              : validation.blockType === "soft"
+              ? "⚠️ Warning"
+              : "✅ Ready"}
+          </Badge>
+        )}
 
         <Flex direction="column" gap="md" mt="md">
           {/* Repeat */}

@@ -76,13 +76,33 @@ export default function MatchmakingPage() {
     getCurrentUserAndJoinQueue();
   }, [router]);
 
-  // Auto-join queue when user is loaded and WebSocket is connected
+  // Validate settings before joining queue
+  const [settingsValid, setSettingsValid] = useState<boolean | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (user && isConnected && !isInQueue && !matchFound) {
+    const validateSettings = async () => {
+      if (!user) return;
+
+      const { validateUserSettings } = await import("@/lib/utils/validateSettings");
+      const result = await validateUserSettings(user.id);
+
+      setSettingsValid(result.canMatch);
+      setValidationError(result.errorMessage);
+    };
+
+    validateSettings();
+  }, [user]);
+
+  // Auto-join queue when user is loaded, WebSocket is connected, and settings are valid
+  useEffect(() => {
+    if (user && isConnected && !isInQueue && !matchFound && settingsValid === true) {
       console.log("🚀 Auto-joining queue via WebSocket");
       joinQueue();
+    } else if (settingsValid === false) {
+      console.warn("⚠️ Cannot join queue: Invalid settings");
     }
-  }, [user, isConnected, isInQueue, matchFound, joinQueue]);
+  }, [user, isConnected, isInQueue, matchFound, settingsValid, joinQueue]);
 
   // Timer effect
   useEffect(() => {
@@ -114,12 +134,30 @@ export default function MatchmakingPage() {
     router.push("/");
   };
 
+  // Redirect to settings if invalid
+  useEffect(() => {
+    if (settingsValid === false && validationError) {
+      router.push(`/settings?error=invalid_config`);
+    }
+  }, [settingsValid, validationError, router]);
+
   // Show error state
   if (error) {
     return (
       <div style={{ padding: '20px', color: 'red' }}>
         Error: {error}
         <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
+
+  // Show validation error
+  if (settingsValid === false) {
+    return (
+      <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+        <h2>Invalid Settings</h2>
+        <p>{validationError}</p>
+        <p>Redirecting to settings...</p>
       </div>
     );
   }

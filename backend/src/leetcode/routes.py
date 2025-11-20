@@ -34,3 +34,23 @@ async def get_recent_user_submission(username: str):
 async def get_user_profile_summary(username: str):
     """Get user's LeetCode profile summary including bio (aboutMe)"""
     return await LeetCodeService.get_user_profile_summary(username)
+
+
+@router.get("/questions")
+async def get_all_questions():
+    return await LeetCodeService.fetch_leetcode_questions()
+
+@router.post("/refresh-topic-map")
+async def refresh_topic_map():
+    result = await LeetCodeService.refresh_topic_difficulty_map()
+    return result
+
+@router.get("/topic-map")
+async def get_topic_map():
+    from src.leetcode.service.leetcode_service import TOPIC_MAP_CACHE
+    
+    if TOPIC_MAP_CACHE is None:
+        return {"error": "No topic map cached. Refresh first."}
+
+    # Convert sets to lists for JSON serialization
+    return {topic: list(diffs) for topic, diffs in TOPIC_MAP_CACHE.items()}

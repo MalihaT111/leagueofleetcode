@@ -20,8 +20,16 @@ async def get_or_create_friends_record(db: AsyncSession, user_id: int) -> Friend
             friend_requests_received=[]
         )
         db.add(friends_record)
-        await db.commit()
-        await db.refresh(friends_record)
+        try:
+            await db.commit()
+            await db.refresh(friends_record)
+        except Exception as e:
+            # Handle race condition - record was created by another request
+            await db.rollback()
+            result = await db.execute(select(Friends).where(Friends.user_id == user_id))
+            friends_record = result.scalar_one_or_none()
+            if not friends_record:
+                raise e  # Re-raise if it's a different error
     
     return friends_record
 
