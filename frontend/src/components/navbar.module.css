@@ -1,0 +1,46 @@
+
+/* NAVBAR CONTAINER */
+.navbar {
+  position: absolute;
+  top: 5%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  z-index: 200;
+  pointer-events: auto;
+}
+
+/* BASE NAV ITEMS */
+.navItem {
+  color: rgba(220, 220, 255, 0.65);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: 500;
+  position: relative;
+  text-decoration: none;
+  transition: color 0.25s ease, transform 0.25s ease;
+
+  /* Orbit drift animation */
+  animation: orbitFloat 6s ease-in-out infinite;
+}
+
+/* LOGOUT = purple/pink highlight */
+.navItemLogout {
+  composes: navItem;
+  color: #f38d8d;
+}
+
+/* Hover glow */
+.navItem:hover {
+  color: #c7b8ff;
+  transform: translateY(-2px);
+}
+
+/* NAVBAR FLOAT MOTION (very subtle) */
+@keyframes orbitFloat {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0px); }
+}
