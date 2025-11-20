@@ -11,7 +11,7 @@ import {
   Box,
 } from "@mantine/core";
 import Link from "next/link";
-import { AngledButton } from "@/components/angledbutton";
+import { AngledButton } from "@/components/home/angledbutton";
 
 export default function Home() {
   return (

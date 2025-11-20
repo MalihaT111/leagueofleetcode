@@ -1,7 +1,7 @@
 import { Flex, Title, Text, Button, Stack } from "@mantine/core";
 import Navbar from "../navbar";
 import { montserrat, orbitron } from "@/app/fonts";
-import { ProfileBox } from "../profilebox";
+import { ProfileBox } from "../profile/profilebox";
 import { UseMutationResult } from "@tanstack/react-query";
 import { User } from "@/utils/auth";
 

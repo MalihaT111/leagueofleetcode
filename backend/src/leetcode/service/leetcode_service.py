@@ -6,8 +6,63 @@ from src.leetcode.schemas import Problem, UserSubmission, ProblemStats, SyncResu
 from src.leetcode.enums.difficulty import DifficultyEnum
 from src.leetcode.service.graphql_queries import *
 import json
+from collections import defaultdict
+import os 
+
+CACHE_FILE = "topic_map_cache.json"
+ALL_DIFFS = {"EASY", "MEDIUM", "HARD"}
+TOPIC_MAP_CACHE = None
 
 class LeetCodeService:
+    @staticmethod
+    async def load_cache():
+        """Load cache from disk on startup."""
+        global TOPIC_MAP_CACHE
+
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, "r") as f:
+                # Convert stored lists back into sets
+                data = json.load(f)
+                TOPIC_MAP_CACHE = {k: set(v) for k, v in data.items()}
+
+    @staticmethod
+    async def fetch_leetcode_questions():
+        data = await LeetCodeGraphQLClient.query(MAPPING_QUERY)
+        return data["data"]["problemsetQuestionListV2"]["questions"]
+
+
+    @staticmethod
+    async def refresh_topic_difficulty_map():
+        """
+        Refresh the topic->difficulty map AND persist it.
+        Only topics missing at least one difficulty are included.
+        """
+        global TOPIC_MAP_CACHE
+
+        questions = await LeetCodeService.fetch_leetcode_questions()
+        topic_map = defaultdict(set)
+
+        for q in questions:
+            diff = q["difficulty"]
+            for tag in q["topicTags"]:
+                topic_map[tag["name"]].add(diff)
+
+        # Filter topics missing at least one difficulty
+        # Store the MISSING difficulties (disallowed), not the available ones
+        filtered = {
+            topic: list(ALL_DIFFS - diffs)  # Get missing difficulties
+            for topic, diffs in topic_map.items()
+            if diffs != ALL_DIFFS  # Only include topics missing at least one difficulty
+        }
+
+        TOPIC_MAP_CACHE = {k: set(v) for k, v in filtered.items()}
+
+        # Save to disk (already converted to lists)
+        with open(CACHE_FILE, "w") as f:
+            json.dump(filtered, f)
+
+        return {"status": "updated", "topics": len(filtered)}
+    
     @staticmethod
     async def get_problem(slug: str) -> Problem:
         data = await LeetCodeGraphQLClient.query(PROBLEM_QUERY, {"titleSlug": slug})
@@ -97,12 +152,21 @@ class LeetCodeService:
     @staticmethod
     async def get_random_problem(
         topics: Optional[list[str]] = None,
-        difficulty: Optional[list[str]] = None
+        difficulty: Optional[list[str]] = None,
+        excluded_slugs: Optional[set[str]] = None,
+        max_attempts: int = 10
     ) -> Problem:
         """
         Fetch a random LeetCode problem filtered only by topic(s) and difficulty.
-        Skips premium problems and ignores all other filters.
+        Skips premium problems and excluded problems (for repeat=false).
+        
+        Args:
+            topics: List of topic slugs to filter by
+            difficulty: List of difficulty levels (EASY, MEDIUM, HARD)
+            excluded_slugs: Set of problem slugs to exclude (completed problems)
+            max_attempts: Maximum number of attempts to find a non-excluded problem
         """
+        excluded_slugs = excluded_slugs or set()
 
         # Build the GraphQL filter structure
         filters = {
@@ -127,30 +191,44 @@ class LeetCodeService:
             "searchKeyword": ""
         }
 
-        try:
-            response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY, variables)
-            random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
+        # Try multiple times to get a non-excluded problem
+        for attempt in range(max_attempts):
+            try:
+                response = await LeetCodeGraphQLClient.query(RANDOM_QUESTION_QUERY, variables)
+                random_slug = response["data"]["randomQuestionV2"]["titleSlug"]
 
-            if not random_slug:
-                raise ValueError("LeetCode API returned no titleSlug")
+                if not random_slug:
+                    raise ValueError("LeetCode API returned no titleSlug")
 
-            print(f"🎯 Selected random problem: {random_slug}")
+                # Check if this problem is excluded
+                if random_slug in excluded_slugs:
+                    print(f"🔄 Attempt {attempt + 1}: Problem {random_slug} already completed, retrying...")
+                    continue
 
-            problem_data = await LeetCodeService.get_problem(random_slug)
-            problem = problem_data["data"]["question"]
+                print(f"🎯 Selected random problem: {random_slug}")
 
-            stats_data = json.loads(problem["stats"])
-            acceptance_rate = stats_data.get("acRate")
+                problem_data = await LeetCodeService.get_problem(random_slug)
+                problem = problem_data["data"]["question"]
 
-            return Problem(
-                id=problem["questionId"],
-                title=problem["title"],
-                slug=problem["titleSlug"],
-                difficulty=problem["difficulty"],
-                tags=[tag["name"] for tag in problem["topicTags"]],
-                acceptance_rate=acceptance_rate
-            )
+                stats_data = json.loads(problem["stats"])
+                acceptance_rate = stats_data.get("acRate")
 
-        except Exception as e:
-            print(f"⚠️ Failed to fetch random problem: {e}")
-            return {"error": str(e)}
+                return Problem(
+                    id=problem["questionId"],
+                    title=problem["title"],
+                    slug=problem["titleSlug"],
+                    difficulty=problem["difficulty"],
+                    tags=[tag["name"] for tag in problem["topicTags"]],
+                    acceptance_rate=acceptance_rate
+                )
+            
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    continue
+                print(f"⚠️ Failed to fetch random problem: {e}")
+                return {"error": str(e)}
+        
+        # If we exhausted all attempts, all problems were excluded
+        error_msg = "You've completed all questions under your current filters. Enable Repeat Questions or widen your topics."
+        print(f"⚠️ {error_msg}")
+        return {"error": error_msg}

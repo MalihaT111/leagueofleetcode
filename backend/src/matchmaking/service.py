@@ -78,6 +78,24 @@ TOPIC_MAPPING = [
     "biconnected-component",
 ]
 
+async def get_completed_problems(db: AsyncSession, user_id: int) -> set:
+    """Get all problem slugs that a user has completed"""
+    from sqlalchemy import select, or_
+    
+    # Get all matches where user was winner or loser (excluding TBD matches)
+    result = await db.execute(
+        select(MatchHistory.leetcode_problem).where(
+            or_(
+                MatchHistory.winner_id == user_id,
+                MatchHistory.loser_id == user_id
+            )
+        ).where(MatchHistory.leetcode_problem != "TBD")
+    )
+    
+    completed = {row[0] for row in result.fetchall()}
+    return completed
+
+
 async def create_match_record(db: AsyncSession, user: User, opponent: User):
     from sqlalchemy import or_, delete
 
@@ -94,6 +112,22 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
 
     shared_topics = list(set(user.topics or []) & set(opponent.topics or []))
     shared_difficulty = list(set(user.difficulty or []) & set(opponent.difficulty or []))
+    
+    # Check if either user has repeat disabled
+    user_repeat = getattr(user, 'repeating_questions', True)
+    opponent_repeat = getattr(opponent, 'repeating_questions', True)
+    
+    # Get completed problems for users with repeat disabled
+    excluded_problems = set()
+    if not user_repeat:
+        user_completed = await get_completed_problems(db, user.id)
+        excluded_problems.update(user_completed)
+        print(f"🔄 User {user.email} has repeat OFF - excluding {len(user_completed)} problems")
+    
+    if not opponent_repeat:
+        opponent_completed = await get_completed_problems(db, opponent.id)
+        excluded_problems.update(opponent_completed)
+        print(f"🔄 Opponent {opponent.email} has repeat OFF - excluding {len(opponent_completed)} problems")
 
     # If no overlap, use fallback defaults to ensure matches can still be created
     if not shared_topics and not shared_difficulty:
@@ -125,11 +159,13 @@ async def create_match_record(db: AsyncSession, user: User, opponent: User):
     
     problem = await LeetCodeService.get_random_problem(
         topics=topic_slugs or None,
-        difficulty=difficulty_strings or None
+        difficulty=difficulty_strings or None,
+        excluded_slugs=excluded_problems if excluded_problems else None
     )
 
     if not problem or (isinstance(problem, dict) and "error" in problem):
-        print(f"⚠️ Failed to fetch compatible problem for {user.email} & {opponent.email}")
+        error_msg = problem.get("error", "Unknown error") if isinstance(problem, dict) else "Failed to fetch problem"
+        print(f"⚠️ Failed to fetch compatible problem for {user.email} & {opponent.email}: {error_msg}")
         return None
 
     match = MatchHistory(

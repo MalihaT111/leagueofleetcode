@@ -68,3 +68,16 @@ QUESTION_STATS_QUERY = """
       }
   }
 """
+
+MAPPING_QUERY = """
+query problemsetQuestionListV2 {
+  problemsetQuestionListV2 {
+    questions {
+      difficulty
+      topicTags {
+        name
+      }
+    }
+  }
+}
+"""

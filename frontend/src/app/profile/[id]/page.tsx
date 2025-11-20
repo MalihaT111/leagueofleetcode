@@ -4,8 +4,8 @@ import { useProfileQuery } from "@/lib/api/queries/profile";
 import { Flex, Title } from "@mantine/core";
 import { montserrat } from "../../fonts";
 import Navbar from "@/components/navbar";
-import ProfileStatsCard from "@/components/profilestatscard";
-import RecentSubmissionsTable from "@/components/profilesubmissions";
+import ProfileStatsCard from "@/components/profile/profilestatscard";
+import RecentSubmissionsTable from "@/components/profile/profilesubmissions";
 import { useParams } from "next/navigation";
 
 export default function ProfilePage() {

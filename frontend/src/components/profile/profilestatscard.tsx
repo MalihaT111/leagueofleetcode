@@ -1,6 +1,6 @@
 "use client";
 import { Card, Flex, Group, Text } from "@mantine/core";
-import ProfileHeader from "@/components/profilehead";
+import ProfileHeader from "@/components/profile/profilehead";
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
